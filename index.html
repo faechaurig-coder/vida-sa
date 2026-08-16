@@ -6,47 +6,60 @@
   <title>VIDA S.A.</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/app.css" />
 </head>
 <body>
   <div class="phone">
-    <header class="corp-bar">
+    <header class="topbar" id="topbar">
       <div class="logo">VIDA S.A.</div>
-      <div class="corp-meta" id="corp-meta">Informe trimestral</div>
+      <div class="top-meta" id="corp-meta">Tu vida</div>
     </header>
+
     <div class="perk-chip" id="perk-chip" hidden></div>
 
     <div class="hud" id="hud" hidden>
-      <div class="hud-row">
-        <span id="hud-age">0</span>
-        <span class="hud-job" id="hud-job">—</span>
-        <span class="money" id="hud-money">$0</span>
-      </div>
-      <div class="hud-bars">
-        <div>
-          <label>Felicidad <b id="hud-hap">—</b></label>
-          <div class="bar"><i id="bar-hap"></i></div>
+      <div class="hud-main">
+        <div class="hud-who">
+          <span class="hud-face" aria-hidden="true">🧑</span>
+          <div>
+            <strong id="hud-age">16 años</strong>
+            <span class="hud-job" id="hud-job">—</span>
+          </div>
         </div>
-        <div>
-          <label>Salud <b id="hud-hp">—</b></label>
-          <div class="bar"><i id="bar-hp"></i></div>
-        </div>
+        <div class="hud-cash" id="hud-money">$0</div>
       </div>
-      <div class="hud-assets">
-        <div class="asset"><span class="asset-icon">⌂</span><span id="home-tier">—</span></div>
-        <div class="asset"><span class="asset-icon">▣</span><span id="car-tier">—</span></div>
-        <div class="asset"><span class="asset-icon">○</span><span id="rel-tier">—</span></div>
-        <div class="asset debt" id="debt-tier" hidden></div>
+      <div class="life-line" aria-hidden="true">
+        <div class="life-track"><i id="life-fill"></i><b id="life-dot"></b></div>
+        <div class="life-marks" id="life-marks"></div>
+      </div>
+      <div class="hud-pills">
+        <span class="pill pill-hap">❤️ <b id="hud-hap">—</b></span>
+        <span class="pill pill-hp">🫀 <b id="hud-hp">—</b></span>
+        <span class="pill" id="home-pill">🏠 <b id="home-tier">—</b></span>
+        <span class="pill" id="car-pill">🚗 <b id="car-tier">—</b></span>
+        <span class="pill" id="rel-pill">👨‍👩‍👧 <b id="rel-tier">—</b></span>
+        <span class="pill pill-debt" id="debt-tier" hidden>📉 deuda</span>
       </div>
     </div>
 
     <main id="stage"></main>
-    <footer class="fineprint">VIDA S.A. · existencia como servicio</footer>
+    <footer class="fineprint" id="fineprint">Cada decisión cuenta.</footer>
 
-    <div class="reveal" id="reveal" aria-hidden="true">
-      <div class="reveal-card">
-        <p class="eyebrow">Activo adquirido</p>
+    <div class="overlay juice" id="juice" aria-hidden="true">
+      <div class="overlay-card juice-card">
+        <p class="juice-years" id="juice-years"></p>
+        <div class="juice-hero" id="juice-hero"></div>
+        <p class="juice-line" id="juice-line"></p>
+        <div class="juice-deltas" id="juice-deltas"></div>
+        <p class="juice-hook" id="juice-hook" hidden></p>
+        <button type="button" class="btn" id="juice-ok">Continuar</button>
+      </div>
+    </div>
+
+    <div class="overlay reveal" id="reveal" aria-hidden="true">
+      <div class="overlay-card reveal-card">
+        <p class="eyebrow" id="reveal-kicker">🎁 Esto es tuyo</p>
         <div class="reveal-art" id="reveal-art"></div>
         <h2 id="reveal-title"></h2>
         <p id="reveal-copy"></p>

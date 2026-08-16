@@ -4,7 +4,7 @@ export const PERKS = [
   {
     id: "colchon",
     name: "Colchón",
-    tagline: "Más liquidez al firmar. El estilo de vida llega después.",
+    tagline: "Empiezas con más plata. El resto, igual de caro.",
     category: "start",
     cannot: ["abrir mundos", "saltar Costo", "borrar deuda"],
     tiers: {
@@ -16,7 +16,7 @@ export const PERKS = [
   {
     id: "contacto",
     name: "Contacto",
-    tagline: "Alguien te abre una puerta. La comisión es social.",
+    tagline: "Alguien te abre una puerta. Después cobra en favores.",
     category: "chance",
     cannot: ["éxito garantizado", "saltar Costo"],
     tiers: {
@@ -28,7 +28,7 @@ export const PERKS = [
   {
     id: "red",
     name: "Red de contención",
-    tagline: "El sistema te deja caer un poco más antes del acta.",
+    tagline: "Aguantas un poco más cuando todo se pone feo.",
     category: "protect",
     cannot: ["salud infinita", "evitar colapso por salud"],
     tiers: {

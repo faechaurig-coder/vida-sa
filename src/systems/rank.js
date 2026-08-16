@@ -87,5 +87,5 @@ export function questionFor(run, rank, near) {
   if (near?.kind === "bonds") return "¿Y si contestabas esa llamada?";
   if (rank.neglected === "felicidad") return "¿Y si priorizabas el domingo?";
   if (rank.dominant === "dinero") return "¿Y si no optimizabas el KPI?";
-  return "¿Y si elegías la otra semilla?";
+  return "¿Y si empezabas de otra forma?";
 }

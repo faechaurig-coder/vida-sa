@@ -7,6 +7,7 @@ import {
   SEED_SCREEN,
   STAGE_LABELS,
 } from "../content/intro.js";
+import { ICO } from "../content/present.js";
 import {
   canUpgrade,
   perkSummary,
@@ -14,6 +15,7 @@ import {
   tierLabel,
   upgradeCost,
 } from "../systems/perks.js";
+import { axisLine } from "./juice.js";
 
 function esc(s) {
   return String(s ?? "")
@@ -23,11 +25,11 @@ function esc(s) {
     .replace(/"/g, "&quot;");
 }
 
-function progressDots(total, current) {
+function dots(total, current) {
   return (
-    '<div class="progress-dots" role="tablist" aria-label="Progreso">' +
+    '<div class="progress-dots">' +
     Array.from({ length: total }, (_, i) =>
-      '<span class="dot' + (i === current ? " is-on" : "") + '" aria-hidden="true"></span>',
+      '<span class="dot' + (i === current ? " is-on" : "") + '"></span>',
     ).join("") +
     "</div>"
   );
@@ -37,6 +39,8 @@ export function renderBoot(meta) {
   const returning = (meta.lives ?? 0) > 0;
   return (
     '<section class="screen screen-hero fade-in">' +
+    '<div class="hero-orbit" aria-hidden="true"><span>💰</span><span>❤️</span><span>🏠</span><span>🚗</span><span>💼</span></div>' +
+    '<div class="crown" aria-hidden="true">👑</div>' +
     '<p class="eyebrow">' +
     esc(BOOT.eyebrow) +
     "</p>" +
@@ -46,31 +50,25 @@ export function renderBoot(meta) {
     '<p class="lead">' +
     esc(BOOT.lead) +
     "</p>" +
-    '<p class="sub">' +
-    esc(BOOT.sub) +
-    "</p>" +
     (returning
-      ? '<div class="stat-strip">' +
-        '<div class="stat"><b>' +
+      ? '<div class="hero-stats">' +
+        '<div class="hero-stat"><b>' +
         (meta.pv ?? 0) +
-        '</b><span>PV acumulados</span></div>' +
-        '<div class="stat"><b>' +
+        "</b><span>puntos</span></div>" +
+        '<div class="hero-stat"><b>' +
         (meta.lives ?? 0) +
-        '</b><span>vidas registradas</span></div>' +
-        "</div>"
+        "</b><span>vidas</span></div></div>"
       : "") +
     (meta.lastEpitaph
-      ? '<blockquote class="epitaph">Última acta: <em>' + esc(meta.lastEpitaph) + "</em></blockquote>"
+      ? '<p class="last-life">La última vez: <em>' + esc(meta.lastEpitaph) + "</em></p>"
       : "") +
-    '<button type="button" class="btn" data-act="' +
-    (returning ? "seeds" : "intro") +
-    '">' +
+    '<button type="button" class="btn btn-xl" data-act="seeds">' +
     esc(returning ? BOOT.ctaReturn : BOOT.cta) +
     "</button>" +
-  (returning
-    ? '<button type="button" class="btn ghost" data-act="intro">Releer contrato</button>'
-    : "") +
-    "</section>"
+    '<button type="button" class="link-btn" data-act="intro">¿Cómo se juega?</button>' +
+    '<p class="motto">' +
+    esc(BOOT.motto) +
+    "</p></section>"
   );
 }
 
@@ -78,8 +76,8 @@ export function renderIntro(beat) {
   const b = INTRO_BEATS[beat];
   const last = beat >= INTRO_BEATS.length - 1;
   return (
-    '<section class="screen screen-intro fade-in">' +
-    progressDots(INTRO_BEATS.length, beat) +
+    '<section class="screen fade-in">' +
+    dots(INTRO_BEATS.length, beat) +
     '<p class="eyebrow">' +
     esc(b.kicker) +
     "</p>" +
@@ -93,24 +91,20 @@ export function renderIntro(beat) {
     esc(b.note) +
     "</p>" +
     '<div class="row-actions">' +
-    (beat > 0
-      ? '<button type="button" class="btn ghost" data-act="intro-back">Atrás</button>'
-      : "") +
+    (beat > 0 ? '<button type="button" class="btn ghost" data-act="intro-back">Atrás</button>' : "") +
     '<button type="button" class="btn" data-act="' +
     (last ? "seeds" : "intro-next") +
     '">' +
     (last ? "Elegir origen" : "Continuar") +
-    "</button>" +
-    "</div>" +
-    '<button type="button" class="link-btn" data-act="seeds">Saltar introducción</button>' +
-    "</section>"
+    "</button></div>" +
+    '<button type="button" class="link-btn" data-act="seeds">Saltar</button></section>'
   );
 }
 
 export function renderSeeds(meta) {
-  const equipped = meta.equippedPerk;
+  const returning = (meta.lives ?? 0) > 0;
   return (
-    '<section class="screen screen-seeds fade-in">' +
+    '<section class="screen fade-in">' +
     '<p class="eyebrow">' +
     esc(SEED_SCREEN.eyebrow) +
     "</p>" +
@@ -120,31 +114,31 @@ export function renderSeeds(meta) {
     '<p class="lead">' +
     esc(SEED_SCREEN.lead) +
     "</p>" +
-    renderPerkSlot(meta) +
+    (returning ? renderPerkSlot(meta) : "") +
     '<div class="seed-grid">' +
-    SEEDS.map(
-      (s) =>
+    SEEDS.map((s) => {
+      const tags = s.tags ?? [
+        { icon: "✨", text: s.opportunity, kind: "ok" },
+        { icon: "😬", text: s.restriction, kind: "warn" },
+      ];
+      return (
         '<button type="button" class="seed-card" data-act="seed" data-id="' +
         s.id +
-        '">' +
-        '<span class="seed-title">' +
+        '"><div class="seed-head"><span class="seed-emoji">' +
+        (s.emoji ?? "✨") +
+        '</span><div><span class="seed-title">' +
         esc(s.title) +
-        "</span>" +
-        '<span class="seed-tension">' +
+        '</span><span class="seed-tension">' +
         esc(s.tension) +
-        "</span>" +
-        '<p class="seed-body">' +
+        "</span></div></div><p class=\"seed-body\">" +
         esc(s.body) +
-        "</p>" +
-        '<div class="seed-tags">' +
-        '<span class="tag tag-ok">' +
-        esc(s.opportunity) +
-        "</span>" +
-        '<span class="tag tag-warn">' +
-        esc(s.restriction) +
-        "</span>" +
-        "</div></button>",
-    ).join("") +
+        '</p><div class="seed-tags">' +
+        tags
+          .map((t) => '<span class="tag tag-' + t.kind + '">' + esc(t.icon + " " + t.text) + "</span>")
+          .join("") +
+        '</div><span class="seed-cta">Elegir →</span></button>'
+      );
+    }).join("") +
     "</div></section>"
   );
 }
@@ -154,12 +148,10 @@ function renderPerkSlot(meta) {
   const equipped = meta.equippedPerk;
   return (
     '<div class="perk-panel">' +
-    '<div class="perk-panel-head">' +
-    '<span class="perk-panel-title">1 slot · comodín</span>' +
-    '<span class="perk-panel-pv">' +
+    '<div class="perk-panel-head"><span>🎁 Extra para esta vida</span><span class="perk-panel-pv">' +
     pv +
-    " PV</span></div>" +
-    '<p class="perk-panel-lead">Gasta PV para subir tier. Equipa uno para la próxima vida. No compra el final.</p>' +
+    " pts</span></div>" +
+    '<p class="perk-panel-lead">Gasta puntos. Equipa uno. No te gana la vida.</p>' +
     '<div class="perk-grid">' +
     PERKS.map((p) => {
       const tier = perkTier(meta, p.id);
@@ -169,26 +161,20 @@ function renderPerkSlot(meta) {
       return (
         '<div class="perk-card' +
         (isEquipped ? " is-equipped" : "") +
-        (tier < 1 ? " is-locked" : "") +
-        '">' +
-        '<div class="perk-card-top">' +
-        '<strong>' +
+        '"><div class="perk-card-top"><strong>' +
         esc(p.name) +
-        "</strong>" +
-        '<span class="perk-tier">' +
-        (tier > 0 ? "Tier " + tierLabel(tier) : "Sin desbloquear") +
-        "</span></div>" +
-        '<p class="perk-tagline">' +
+        '</strong><span class="perk-tier">' +
+        (tier > 0 ? "Nivel " + tierLabel(tier) : "Cerrado") +
+        '</span></div><p class="perk-tagline">' +
         esc(tier > 0 ? perkSummary(p.id, tier) : p.tagline) +
-        "</p>" +
-        '<div class="perk-actions">' +
+        '</p><div class="perk-actions">' +
         (tier >= 1
           ? '<button type="button" class="btn perk-btn' +
             (isEquipped ? " is-on" : "") +
             '" data-act="equip" data-id="' +
             p.id +
             '">' +
-            (isEquipped ? "Equipado" : "Equipar") +
+            (isEquipped ? "Puesto" : "Usar") +
             "</button>"
           : "") +
         (tier < 3
@@ -199,11 +185,11 @@ function renderPerkSlot(meta) {
             '"' +
             (canUp ? "" : " disabled") +
             ">" +
-            (tier === 0 ? "Desbloquear" : "Subir") +
+            (tier === 0 ? "Abrir" : "Subir") +
             " · " +
             nextCost +
-            " PV</button>"
-          : '<span class="perk-maxed">Tier máximo</span>') +
+            "</button>"
+          : '<span class="perk-maxed">Al máximo</span>') +
         "</div></div>"
       );
     }).join("") +
@@ -214,6 +200,7 @@ function renderPerkSlot(meta) {
 export function renderLife(run, view) {
   const ev = view.event;
   const stage = STAGE_LABELS[ev.stage] ?? ev.stage;
+  const tones = ["choice-a", "choice-b", "choice-c"];
   return (
     '<section class="screen screen-life fade-in">' +
     '<p class="stage-tag"><span class="stage-pill">' +
@@ -221,20 +208,18 @@ export function renderLife(run, view) {
     "</span> · " +
     run.age +
     " años</p>" +
-    '<article class="event-card">' +
-    "<h2>" +
+    '<article class="event-card"><h2>' +
     esc(ev.title) +
-    "</h2>" +
-    '<p class="card-body">' +
+    '</h2><p class="card-body">' +
     esc(ev.body) +
-    "</p>" +
-    (view.punchline ? '<p class="punchline">' + esc(view.punchline) + "</p>" : "") +
-    "</article>" +
+    "</p></article>" +
     '<div class="choices">' +
     ev.options
       .map(
-        (o) =>
-          '<button type="button" class="choice" data-act="opt" data-id="' +
+        (o, i) =>
+          '<button type="button" class="choice ' +
+          tones[i % 3] +
+          '" data-act="opt" data-id="' +
           o.id +
           '"><span class="choice-label">' +
           esc(o.label) +
@@ -250,28 +235,41 @@ export function renderLife(run, view) {
 export function renderPost(view, meta, beat, collapsed) {
   const r = view.rank;
   const cfg = POST_BEATS[beat] ?? POST_BEATS[3];
+  const axes = axisLine(r.dominant, r.neglected);
   let title = "";
   let body = "";
+  let extra = "";
+  const icons = ["👑", "📊", "⭐", "🌅"];
 
   if (cfg.titleKey === "identity") title = r.identity;
-  else if (cfg.titleKey === "axes") title = r.dominant + " alto · " + r.neglected + " bajo";
-  else if (cfg.titleKey === "near") title = view.near ? view.near.text : "Sin casi.";
+  else if (cfg.titleKey === "axes") title = "Así te fue";
+  else if (cfg.titleKey === "near") title = view.near ? view.near.text : "Sin un «casi» esta vez.";
   else title = view.question;
 
   if (cfg.titleKey === "identity") body = collapsed ? cfg.bodyCollapsed : cfg.bodyNormal;
-  else if (cfg.bodyKey === "tradeoff") body = "Conseguiste " + r.got + ". Sacrificaste " + r.sacrificed + ".";
-  else if (view.near && cfg.bodyNear) body = cfg.bodyNear;
+  else if (cfg.bodyKey === "tradeoff") {
+    body = "Conseguiste " + r.got + ". Dejaste " + r.sacrificed + ".";
+    extra =
+      '<div class="axes-box"><div class="axis-row">' +
+      esc(axes.high) +
+      '</div><div class="axis-row">' +
+      esc(axes.low) +
+      "</div></div>";
+  } else if (view.near && cfg.bodyNear) body = cfg.bodyNear;
   else if (cfg.bodyNone && cfg.titleKey === "near") body = cfg.bodyNone;
   else if (cfg.bodyKey === "pv")
     body =
-      "+" +
+      "Ganaste " +
       (view.pvAward ?? 0) +
-      " PV esta vida · total " +
+      " puntos. Llevas " +
       (meta.pv ?? 0) +
-      ". Los PV no compran el final. Solo la siguiente oportunidad de equivocarte distinto.";
+      ". No compran el final. Sirven para la siguiente.";
 
   return (
     '<section class="screen screen-post fade-in">' +
+    '<div class="post-icon">' +
+    icons[beat] +
+    "</div>" +
     '<p class="eyebrow">' +
     esc(cfg.kicker) +
     "</p>" +
@@ -281,9 +279,12 @@ export function renderPost(view, meta, beat, collapsed) {
     '<p class="lead">' +
     esc(body) +
     "</p>" +
+    extra +
     (cfg.cta
-      ? '<button type="button" class="btn" data-act="again">Nueva vida</button><button type="button" class="btn ghost" data-act="boot">Inicio</button>'
+      ? '<button type="button" class="btn btn-xl" data-act="again">🚀  Otra vida</button><button type="button" class="btn ghost" data-act="boot">Inicio</button>'
       : '<button type="button" class="btn" data-act="beat">Continuar</button>') +
     "</section>"
   );
 }
+
+export { ICO };

@@ -1,11 +1,17 @@
 export const SEEDS = [
   {
     id: "apellido",
-    title: "El apellido",
-    body: "Hay un lugar en la mesa de Navidad y un lugar en la empresa del tío. Las dos sillas pesan igual.",
-    tension: "¿Vives su plan o el tuyo?",
-    opportunity: "Contactos y un colchón.",
-    restriction: "La familia cobra en obediencia.",
+    title: "La familia",
+    emoji: "👨‍👩‍👦",
+    body: "Tu familia tiene un buen nombre. Eso abre algunas puertas… y también trae expectativas.",
+    tension: "Te conocen. También te vigilan.",
+    opportunity: "✨ Te conocen",
+    restriction: "😰 + Presión",
+    tags: [
+      { icon: "✨", text: "Te conocen", kind: "ok" },
+      { icon: "💰", text: "+ Oportunidades", kind: "ok" },
+      { icon: "😰", text: "+ Presión", kind: "warn" },
+    ],
     start: {
       age: 16,
       money: 380,
@@ -25,10 +31,16 @@ export const SEEDS = [
   {
     id: "beca",
     title: "La beca",
-    body: "Te prestaron el futuro. El contrato no dice cuántos años se lleva el interés.",
-    tension: "¿Estudias o cobras esta semana?",
-    opportunity: "Una puerta a educación.",
-    restriction: "Cero margen. El tiempo es la deuda.",
+    emoji: "🎓",
+    body: "Puedes estudiar sin pagar. Pero vas a esperar para ganar dinero de verdad.",
+    tension: "El futuro te lo prestaron. El presente, no.",
+    opportunity: "🎓 + Estudios",
+    restriction: "💰 − Dinero ahora",
+    tags: [
+      { icon: "🎓", text: "+ Estudios", kind: "ok" },
+      { icon: "💰", text: "− Dinero ahora", kind: "warn" },
+      { icon: "⏳", text: "− Tiempo", kind: "warn" },
+    ],
     start: {
       age: 17,
       money: 150,
@@ -48,10 +60,16 @@ export const SEEDS = [
   {
     id: "oficio",
     title: "El oficio",
-    body: "Cobras el viernes. El ascensor social tiene un letrero de fuera de servicio.",
-    tension: "¿Sobrevives o intentas subir?",
-    opportunity: "Dinero ahora. Oficio, ritmo, calle.",
-    restriction: "Educación y estatus arrancan cerrados.",
+    emoji: "🔧",
+    body: "Puedes empezar a trabajar ya. El dinero llega rápido… crecer será más difícil.",
+    tension: "Cobras el viernes. Subir cuesta años.",
+    opportunity: "💰 + Dinero ahora",
+    restriction: "🎓 − Estudios",
+    tags: [
+      { icon: "💰", text: "+ Dinero ahora", kind: "ok" },
+      { icon: "⚡", text: "+ Experiencia", kind: "ok" },
+      { icon: "🎓", text: "− Estudios", kind: "warn" },
+    ],
     start: {
       age: 16,
       money: 160,

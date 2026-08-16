@@ -1,19 +1,18 @@
 import { choose, hudOf, startLife } from "../engine/play.js";
-import { homeLabel, carLabel } from "../systems/assets.js";
+import { LIFE_MARKS, lifeProgress, yearsLine } from "../content/present.js";
+import { carLabel, homeLabel } from "../systems/assets.js";
 import { getPerk } from "../content/perks.js";
 import { emptyMeta, loadSave, rememberLife, saveAll } from "../systems/persist.js";
 import { equipPerk, perkTier, tierLabel, upgradePerk } from "../systems/perks.js";
-import {
-  renderBoot,
-  renderIntro,
-  renderLife,
-  renderPost,
-  renderSeeds,
-} from "./render.js";
+import { formatMoney, juiceDeltas, juiceHero, juiceTone, snap } from "./juice.js";
+import { renderBoot, renderIntro, renderLife, renderPost, renderSeeds } from "./render.js";
 
 const stageEl = document.getElementById("stage");
 const hud = document.getElementById("hud");
 const reveal = document.getElementById("reveal");
+const juice = document.getElementById("juice");
+const topbar = document.getElementById("topbar");
+const fineprint = document.getElementById("fineprint");
 
 const state = {
   screen: "boot",
@@ -22,11 +21,20 @@ const state = {
   view: null,
   beat: 0,
   meta: emptyMeta(),
+  busy: false,
+  pending: null,
 };
 
-function money(n) {
-  const sign = n < 0 ? "-" : "";
-  return sign + "$" + Math.abs(Math.round(n));
+const CORP = {
+  boot: "Tu vida",
+  intro: "Así se juega",
+  seed: "Tu origen",
+  life: "En curso",
+  post: "El final",
+};
+
+function wait(ms) {
+  return new Promise((r) => setTimeout(r, ms));
 }
 
 function boot() {
@@ -40,6 +48,7 @@ function boot() {
     state.screen = "boot";
     state.introBeat = 0;
   }
+  paintMarks();
   render();
 }
 
@@ -47,8 +56,13 @@ function persist() {
   saveAll(state.meta, state.run && !state.run.ended ? { run: state.run, view: state.view } : null);
 }
 
+function paintMarks() {
+  const el = document.getElementById("life-marks");
+  if (el) el.innerHTML = LIFE_MARKS.map((m) => "<span>" + m.icon + "</span>").join("");
+}
+
 function paintHud() {
-  if (!state.run || state.screen !== "life") {
+  if (!state.run || (state.screen !== "life" && !juice.classList.contains("is-on"))) {
     hud.hidden = true;
     return;
   }
@@ -56,49 +70,23 @@ function paintHud() {
   hud.hidden = false;
   document.getElementById("hud-age").textContent = h.age + " años";
   document.getElementById("hud-job").textContent = h.job;
-  document.getElementById("hud-money").textContent = money(h.money);
+  const cash = document.getElementById("hud-money");
+  cash.textContent = formatMoney(h.money);
+  cash.classList.toggle("is-neg", h.money < 0);
   document.getElementById("hud-hap").textContent = h.happiness;
   document.getElementById("hud-hp").textContent = h.health;
-  document.getElementById("bar-hap").style.width = h.happiness + "%";
-  document.getElementById("bar-hp").style.width = h.health + "%";
   document.getElementById("home-tier").textContent = homeLabel(h.home);
   document.getElementById("car-tier").textContent = carLabel(h.car);
   document.getElementById("rel-tier").textContent = h.partner ? "alguien" : "—";
   const debt = document.getElementById("debt-tier");
   debt.hidden = h.debt <= 0;
-  debt.textContent = h.debt > 0 ? "deuda" : "";
-}
-
-function showReveal(upgrade) {
-  document.getElementById("reveal-title").textContent = upgrade.title;
-  document.getElementById("reveal-copy").textContent = upgrade.copy;
-  document.getElementById("reveal-art").className = "reveal-art " + upgrade.kind;
-  reveal.classList.add("is-on");
-}
-
-function hideReveal() {
-  reveal.classList.remove("is-on");
-}
-
-const CORP_META = {
-  boot: "Expediente",
-  intro: "Onboarding",
-  seed: "Origen",
-  life: "En curso",
-  post: "Balance",
-};
-
-function equippedForLife() {
-  const id = state.meta.equippedPerk;
-  if (!id) return null;
-  const tier = perkTier(state.meta, id);
-  if (tier < 1) return null;
-  return { id, tier };
+  const p = lifeProgress(h.age);
+  document.getElementById("life-fill").style.width = p * 100 + "%";
+  document.getElementById("life-dot").style.left = p * 100 + "%";
 }
 
 function paintPerkChip() {
   const chip = document.getElementById("perk-chip");
-  if (!chip) return;
   const eq = state.run?.equippedPerk;
   if (!eq || state.screen !== "life") {
     chip.hidden = true;
@@ -106,14 +94,94 @@ function paintPerkChip() {
   }
   const perk = getPerk(eq.id);
   chip.hidden = false;
-  chip.textContent = (perk?.name ?? "Comodín") + " · " + tierLabel(eq.tier);
+  chip.textContent = "🎁 " + (perk?.name ?? "Extra") + " · " + tierLabel(eq.tier);
+}
+
+function equippedForLife() {
+  const id = state.meta.equippedPerk;
+  if (!id) return null;
+  const tier = perkTier(state.meta, id);
+  return tier < 1 ? null : { id, tier };
+}
+
+function showJuice(pack, before, years, deferred) {
+  const deltas = juiceDeltas(before, pack.run);
+  const hero = juiceHero(deltas);
+  const tone = juiceTone(deltas);
+  const card = juice.querySelector(".juice-card");
+  card.className = "overlay-card juice-card is-" + tone;
+  document.getElementById("juice-years").textContent = yearsLine(years);
+  document.getElementById("juice-hero").textContent = hero.icon + " " + hero.text;
+  document.getElementById("juice-line").textContent = pack.view.punchline || "Tu vida cambió.";
+  document.getElementById("juice-deltas").innerHTML = deltas
+    .filter((d) => d.key !== "money" || deltas.length < 2)
+    .slice(0, 4)
+    .map((d) => {
+      if (d.text) return '<div class="delta">' + d.icon + " " + d.label + "<span>" + d.text + "</span></div>";
+      const sign = d.delta > 0 ? "+" : "";
+      const val = d.money ? sign + formatMoney(d.delta).replace("-", "") : sign + d.delta;
+      return (
+        '<div class="delta ' +
+        (d.good ? "up" : "down") +
+        '">' +
+        d.icon +
+        " " +
+        d.label +
+        "<span>" +
+        (d.delta < 0 && d.money ? "-" : "") +
+        val +
+        "</span></div>"
+      );
+    })
+    .join("");
+  const hook = document.getElementById("juice-hook");
+  hook.hidden = !deferred;
+  hook.textContent = deferred ? "😬 Esto todavía te puede costar…" : "";
+  juice.classList.add("is-on");
+  if (tone === "loss") hud.classList.add("shake");
+  setTimeout(() => hud.classList.remove("shake"), 400);
+}
+
+function hideJuice() {
+  juice.classList.remove("is-on");
+}
+
+function showReveal(upgrade) {
+  const kicker = upgrade.kind === "home" ? "🏠 ¡NUEVO HOGAR!" : "🚗 ¡NUEVO COCHE!";
+  document.getElementById("reveal-kicker").textContent = kicker;
+  document.getElementById("reveal-title").textContent = upgrade.title;
+  document.getElementById("reveal-copy").textContent = upgrade.copy;
+  const art = document.getElementById("reveal-art");
+  art.className = "reveal-art " + upgrade.kind;
+  art.textContent = upgrade.kind === "home" ? "🏡" : "🚗";
+  reveal.classList.add("is-on");
+}
+
+function hideReveal() {
+  reveal.classList.remove("is-on");
+}
+
+function commitPending() {
+  const pack = state.pending;
+  state.pending = null;
+  if (!pack) return render();
+  if (pack.run.ended) {
+    state.screen = "post";
+    state.beat = 0;
+    state.meta = rememberLife(state.meta, pack.run, pack.view.rank, pack.view.pvAward ?? 0);
+  } else {
+    state.screen = "life";
+  }
+  persist();
+  render();
 }
 
 function render() {
   paintHud();
   paintPerkChip();
-  const meta = document.getElementById("corp-meta");
-  meta.textContent = CORP_META[state.screen] ?? "VIDA S.A.";
+  topbar.classList.toggle("is-hidden", state.screen === "boot");
+  fineprint.classList.toggle("is-hidden", state.screen === "life");
+  document.getElementById("corp-meta").textContent = CORP[state.screen] ?? "VIDA S.A.";
 
   if (state.screen === "boot") {
     stageEl.innerHTML = renderBoot(state.meta);
@@ -128,8 +196,7 @@ function render() {
     return;
   }
   if (state.screen === "life") {
-    const ev = state.view.event;
-    if (!ev) {
+    if (!state.view?.event) {
       state.screen = "post";
       return render();
     }
@@ -141,9 +208,9 @@ function render() {
   }
 }
 
-stageEl.addEventListener("click", (e) => {
+stageEl.addEventListener("click", async (e) => {
   const btn = e.target.closest("[data-act]");
-  if (!btn) return;
+  if (!btn || state.busy) return;
   const act = btn.getAttribute("data-act");
 
   if (act === "intro") {
@@ -200,22 +267,37 @@ stageEl.addEventListener("click", (e) => {
     return render();
   }
   if (act === "opt") {
+    if (!state.run || state.run.ended) return;
+    state.busy = true;
+    btn.classList.add("is-picking");
+    const before = snap(state.run);
+    const ev = state.view.event;
+    const option = ev.options.find((o) => o.id === btn.getAttribute("data-id"));
+    await wait(420);
     const pack = choose(state.run, btn.getAttribute("data-id"));
     state.run = pack.run;
     state.view = pack.view;
-    if (pack.view.upgrade) showReveal(pack.view.upgrade);
-    if (pack.run.ended) {
-      state.screen = "post";
-      state.beat = 0;
-      state.meta = rememberLife(state.meta, pack.run, pack.view.rank, pack.view.pvAward ?? 0);
-    } else {
-      state.screen = "life";
-    }
+    state.pending = pack;
+    paintHud();
+    showJuice(pack, before, ev.years ?? 2, !!option?.deferred);
     persist();
-    return render();
+    state.busy = false;
   }
 });
 
-document.getElementById("reveal-ok").addEventListener("click", hideReveal);
+document.getElementById("juice-ok").addEventListener("click", () => {
+  hideJuice();
+  const pack = state.pending;
+  if (pack?.view.upgrade) {
+    showReveal(pack.view.upgrade);
+    return;
+  }
+  commitPending();
+});
+
+document.getElementById("reveal-ok").addEventListener("click", () => {
+  hideReveal();
+  commitPending();
+});
 
 boot();

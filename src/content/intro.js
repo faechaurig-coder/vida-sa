@@ -1,72 +1,72 @@
-/** Módulo inicial: copy de arranque, onboarding y post-vida. */
+/** Copy de jugador. Cero jerga de diseño. */
 
 export const BOOT = {
-  eyebrow: "Departamento de Existencias",
-  title: "Tu vida ya está en el catálogo.",
-  lead: "VIDA S.A. no vende sueños. Los empaqueta, los mide y te cobra el envío.",
-  sub: "Una vida comprimida. Decisiones reales. Consecuencias que regresan. Al final, un balance que no perdona.",
-  cta: "Firmar contrato",
-  ctaReturn: "Nueva vida",
+  eyebrow: "VIDA S.A.",
+  title: "¿Qué vida te toca?",
+  lead: "Cada decisión cambia tu historia.",
+  motto: "Tu vida es un producto. Tú eres el KPI.",
+  cta: "🚀  Empezar mi vida",
+  ctaReturn: "🚀  Otra vida",
 };
 
 export const INTRO_BEATS = [
   {
-    id: "producto",
-    kicker: "Cláusula 1",
-    title: "Eres un activo en revisión.",
-    body: "Cada elección mueve dinero, salud, vínculos y estatus. No hay barra de guardado dentro de la vida. Lo que eliges, se queda.",
-    note: "El juego no te explica el manual. Te cobra el aprendizaje.",
+    id: "elige",
+    kicker: "Así se juega",
+    title: "Ves una situación. Eliges.",
+    body: "No hay respuesta correcta. Cada camino da algo… y quita otra cosa.",
+    note: "Toca. Mira qué pasa. Eso es todo.",
   },
   {
-    id: "consecuencias",
-    kicker: "Cláusula 2",
-    title: "Lo que hoy parece barato, mañana factura.",
-    body: "Algunas decisiones vuelven años después. Otras te suben de piso, de auto o de deuda. La sátira no está en el texto: está en las reglas.",
-    note: "No hay una build perfecta. Solo trade-offs con recibo.",
+    id: "vuelve",
+    kicker: "Ojo",
+    title: "Lo de hoy puede volver mañana.",
+    body: "A veces cobras ya. A veces la factura llega años después.",
+    note: "Si algo suena demasiado bueno… probablemente lo es.",
   },
   {
-    id: "meta",
-    kicker: "Cláusula 3",
-    title: "Al morir, recibes un informe.",
-    body: "Tu vida termina con un epitafio, un rango y Puntos de Vida. Los PV no compran el final: compran comodines para la siguiente.",
-    note: "Tres semillas. Mismo mundo. Vidas que no se repiten igual.",
+    id: "otra",
+    kicker: "Al final",
+    title: "Vas a querer otra vida.",
+    body: "Al terminar verás quién fuiste. Y qué habría pasado si elegías distinto.",
+    note: "Tres formas de empezar. Ninguna es fácil.",
   },
 ];
 
 export const SEED_SCREEN = {
-  eyebrow: "Asignación de origen",
-  title: "Elige de dónde arrancas.",
-  lead: "No es un buff. Es la tensión que te persigue toda la vida.",
+  eyebrow: "Tu origen",
+  title: "¿Cómo quieres empezar?",
+  lead: "Cada comienzo tiene una ventaja… y un problema.",
 };
 
 export const STAGE_LABELS = {
-  formacion: "Formación",
-  arranque: "Arranque",
-  construccion: "Construcción",
-  costo: "Costo",
-  balance: "Balance",
+  formacion: "Tus primeros años",
+  arranque: "Estás arrancando",
+  construccion: "Estás construyendo",
+  costo: "Llegó la factura",
+  balance: "El cierre",
 };
 
 export const POST_BEATS = [
   {
-    kicker: "Acta de cierre",
+    kicker: "Así terminó tu vida",
     titleKey: "identity",
-    bodyCollapsed: "El cuerpo o la cuenta cerraron el expediente antes de tiempo.",
-    bodyNormal: "La vida terminó. El informe, no.",
+    bodyCollapsed: "Se acabó antes. El cuerpo o la cuenta dijeron basta.",
+    bodyNormal: "Esta fuiste tú. Ni más ni menos.",
   },
   {
-    kicker: "Lectura de balance",
+    kicker: "Lo que te definió",
     titleKey: "axes",
     bodyKey: "tradeoff",
   },
   {
-    kicker: "Casi",
+    kicker: "Estuviste cerca",
     titleKey: "near",
-    bodyNear: "Una decisión lo dejó a un paso. Otra vida podría haberlo cruzado.",
-    bodyNone: "Esta vez no hubo casi. Solo lo que quedó escrito.",
+    bodyNear: "Una decisión lo dejó a un paso.",
+    bodyNone: "Esta vez no hubo un «casi». Hubo lo que hubo.",
   },
   {
-    kicker: "Siguiente expediente",
+    kicker: "¿Y si…?",
     titleKey: "question",
     bodyKey: "pv",
     cta: true,
