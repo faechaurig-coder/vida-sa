@@ -38,15 +38,23 @@ function wait(ms) {
 }
 
 function boot() {
-  const saved = loadSave();
-  state.meta = saved.meta;
-  if (saved.session?.run && !saved.session.run.ended) {
-    state.run = saved.session.run;
-    state.view = saved.session.view;
-    state.screen = "life";
-  } else {
+  try {
+    const saved = loadSave();
+    state.meta = saved.meta;
+    const run = saved.session?.run;
+    const view = saved.session?.view;
+    if (run && !run.ended && view?.event) {
+      state.run = run;
+      state.view = view;
+      state.screen = "life";
+    } else {
+      state.screen = "boot";
+      state.introBeat = 0;
+    }
+  } catch {
     state.screen = "boot";
-    state.introBeat = 0;
+    state.run = null;
+    state.view = null;
   }
   render();
 }
@@ -183,35 +191,58 @@ function commitPending() {
   render();
 }
 
-function render() {
-  paintHud();
-  paintPerkChip();
-  topbar.classList.toggle("is-hidden", state.screen === "boot");
-  fineprint.classList.toggle("is-hidden", state.screen === "life" || state.screen === "boot");
-  document.getElementById("corp-meta").textContent = CORP[state.screen] ?? "VIDA S.A.";
+function fallbackBoot() {
+  return (
+    '<section class="screen screen-hero fade-in"><div class="hero-content">' +
+    "<h1>¿Qué vida te toca?</h1>" +
+    '<button type="button" class="btn btn-xl" data-act="seeds">EMPEZAR</button></div></section>'
+  );
+}
 
-  if (state.screen === "boot") {
-    stageEl.innerHTML = renderBoot(state.meta);
-    return;
-  }
-  if (state.screen === "intro") {
-    stageEl.innerHTML = renderIntro(state.introBeat);
-    return;
-  }
-  if (state.screen === "seed") {
-    stageEl.innerHTML = renderSeeds(state.meta);
-    return;
-  }
-  if (state.screen === "life") {
-    if (!state.view?.event) {
-      state.screen = "post";
-      return render();
+function render() {
+  try {
+    paintHud();
+    paintPerkChip();
+    topbar.classList.toggle("is-hidden", state.screen === "boot");
+    fineprint.classList.toggle("is-hidden", state.screen === "life" || state.screen === "boot");
+    document.getElementById("corp-meta").textContent = CORP[state.screen] ?? "VIDA S.A.";
+
+    if (state.screen === "boot") {
+      stageEl.innerHTML = renderBoot(state.meta);
+      return;
     }
-    stageEl.innerHTML = renderLife(state.run, state.view);
-    return;
-  }
-  if (state.screen === "post") {
-    stageEl.innerHTML = renderPost(state.view, state.meta, state.beat, state.run?.collapse);
+    if (state.screen === "intro") {
+      stageEl.innerHTML = renderIntro(state.introBeat);
+      return;
+    }
+    if (state.screen === "seed") {
+      stageEl.innerHTML = renderSeeds(state.meta);
+      return;
+    }
+    if (state.screen === "life") {
+      if (!state.view?.event) {
+        state.screen = "boot";
+        state.run = null;
+        stageEl.innerHTML = renderBoot(state.meta);
+        return;
+      }
+      stageEl.innerHTML = renderLife(state.run, state.view);
+      return;
+    }
+    if (state.screen === "post") {
+      if (!state.view?.rank) {
+        state.screen = "boot";
+        stageEl.innerHTML = renderBoot(state.meta);
+        return;
+      }
+      stageEl.innerHTML = renderPost(state.view, state.meta, state.beat, state.run?.collapse);
+    }
+  } catch {
+    state.screen = "boot";
+    state.busy = false;
+    hideJuice();
+    hideReveal();
+    stageEl.innerHTML = fallbackBoot();
   }
 }
 
@@ -277,18 +308,25 @@ stageEl.addEventListener("click", async (e) => {
     if (!state.run || state.run.ended) return;
     state.busy = true;
     btn.classList.add("is-picking");
-    const before = snap(state.run);
-    const ev = state.view.event;
-    const option = ev.options.find((o) => o.id === btn.getAttribute("data-id"));
-    await wait(420);
-    const pack = choose(state.run, btn.getAttribute("data-id"));
-    state.run = pack.run;
-    state.view = pack.view;
-    state.pending = pack;
-    paintHud();
-    showJuice(pack, before, ev.years ?? 2, !!option?.deferred);
-    persist();
-    state.busy = false;
+    try {
+      const before = snap(state.run);
+      const ev = state.view.event;
+      const option = ev.options.find((o) => o.id === btn.getAttribute("data-id"));
+      await wait(420);
+      const pack = choose(state.run, btn.getAttribute("data-id"));
+      state.run = pack.run;
+      state.view = pack.view;
+      state.pending = pack;
+      paintHud();
+      showJuice(pack, before, ev.years ?? 2, !!option?.deferred);
+      persist();
+    } catch {
+      state.screen = "boot";
+      state.run = null;
+      render();
+    } finally {
+      state.busy = false;
+    }
   }
 });
 
