@@ -6,7 +6,7 @@
   <title>VIDA S.A.</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=Fraunces:wght@600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/app.css" />
 </head>
 <body>
@@ -21,7 +21,7 @@
     <div class="hud" id="hud" hidden>
       <div class="hud-main">
         <div class="hud-who">
-          <span class="hud-face" aria-hidden="true">🧑</span>
+          <span class="hud-avatar" id="hud-avatar"></span>
           <div>
             <strong id="hud-age">16 años</strong>
             <span class="hud-job" id="hud-job">—</span>
@@ -29,17 +29,15 @@
         </div>
         <div class="hud-cash" id="hud-money">$0</div>
       </div>
-      <div class="life-line" aria-hidden="true">
-        <div class="life-track"><i id="life-fill"></i><b id="life-dot"></b></div>
-        <div class="life-marks" id="life-marks"></div>
+      <div class="hud-vitals">
+        <span class="vital" id="hap-vital"></span>
+        <span class="vital" id="hp-vital"></span>
       </div>
-      <div class="hud-pills">
-        <span class="pill pill-hap">❤️ <b id="hud-hap">—</b></span>
-        <span class="pill pill-hp">🫀 <b id="hud-hp">—</b></span>
-        <span class="pill" id="home-pill">🏠 <b id="home-tier">—</b></span>
-        <span class="pill" id="car-pill">🚗 <b id="car-tier">—</b></span>
-        <span class="pill" id="rel-pill">👨‍👩‍👧 <b id="rel-tier">—</b></span>
-        <span class="pill pill-debt" id="debt-tier" hidden>📉 deuda</span>
+      <div class="hud-assets">
+        <div class="asset-ico" id="home-ico" title="Casa"></div>
+        <div class="asset-ico" id="car-ico" title="Coche"></div>
+        <div class="asset-ico" id="study-ico" title="Estudios"></div>
+        <div class="asset-ico" id="fam-ico" title="Familia"></div>
       </div>
     </div>
 
@@ -49,6 +47,7 @@
     <div class="overlay juice" id="juice" aria-hidden="true">
       <div class="overlay-card juice-card">
         <p class="juice-years" id="juice-years"></p>
+        <div class="juice-char" id="juice-char"></div>
         <div class="juice-hero" id="juice-hero"></div>
         <p class="juice-line" id="juice-line"></p>
         <div class="juice-deltas" id="juice-deltas"></div>
@@ -59,7 +58,7 @@
 
     <div class="overlay reveal" id="reveal" aria-hidden="true">
       <div class="overlay-card reveal-card">
-        <p class="eyebrow" id="reveal-kicker">🎁 Esto es tuyo</p>
+        <p class="eyebrow" id="reveal-kicker">Esto es tuyo</p>
         <div class="reveal-art" id="reveal-art"></div>
         <h2 id="reveal-title"></h2>
         <p id="reveal-copy"></p>

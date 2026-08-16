@@ -1,4 +1,4 @@
-import { AXIS_PLAYER, ICO } from "../content/present.js";
+import { AXIS_PLAYER } from "../content/present.js";
 
 export function snap(run) {
   return {
@@ -16,12 +16,12 @@ export function snap(run) {
 }
 
 const FIELDS = [
-  { key: "money", icon: ICO.money, label: "Dinero", money: true },
-  { key: "happiness", icon: ICO.hap, label: "Ánimo" },
-  { key: "health", icon: ICO.hp, label: "Salud" },
-  { key: "bonds", icon: ICO.family, label: "Gente" },
-  { key: "status", icon: ICO.status, label: "Cómo te ven" },
-  { key: "debt", icon: "📉", label: "Deuda", money: true, invert: true },
+  { key: "money", art: "money", label: "Dinero", money: true },
+  { key: "happiness", art: "hap", label: "Ánimo" },
+  { key: "health", art: "hp", label: "Salud" },
+  { key: "bonds", art: "family", label: "Gente" },
+  { key: "status", art: "spark", label: "Cómo te ven" },
+  { key: "debt", art: "lock", label: "Deuda", money: true, invert: true },
 ];
 
 export function juiceDeltas(before, after) {
@@ -32,7 +32,7 @@ export function juiceDeltas(before, after) {
     const good = f.invert ? d < 0 : d > 0;
     out.push({
       key: f.key,
-      icon: f.icon,
+      art: f.art,
       label: f.label,
       delta: d,
       from: before[f.key],
@@ -44,7 +44,7 @@ export function juiceDeltas(before, after) {
   if (before.job !== after.job) {
     out.push({
       key: "job",
-      icon: ICO.job,
+      art: "job",
       label: "Tu trabajo",
       text: after.job,
       good: true,
@@ -58,17 +58,17 @@ export function juiceHero(deltas) {
   if (money) {
     const sign = money.delta > 0 ? "+" : "";
     return {
-      icon: ICO.money,
+      art: "money",
       text: sign + "$" + Math.abs(money.delta),
       tone: money.good ? "gain" : "loss",
     };
   }
   const first = deltas[0];
-  if (!first) return { icon: ICO.spark, text: "Tu vida cambió", tone: "mix" };
-  if (first.text) return { icon: first.icon, text: first.text, tone: "mix" };
+  if (!first) return { art: "spark", text: "Tu vida cambió", tone: "mix" };
+  if (first.text) return { art: first.art, text: first.text, tone: "mix" };
   const sign = first.delta > 0 ? "+" : "";
   return {
-    icon: first.icon,
+    art: first.art,
     text: sign + first.delta,
     tone: first.good ? "gain" : "loss",
   };

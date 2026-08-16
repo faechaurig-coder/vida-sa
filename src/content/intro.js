@@ -5,8 +5,8 @@ export const BOOT = {
   title: "¿Qué vida te toca?",
   lead: "Cada decisión cambia tu historia.",
   motto: "Tu vida es un producto. Tú eres el KPI.",
-  cta: "🚀  Empezar mi vida",
-  ctaReturn: "🚀  Otra vida",
+  cta: "EMPEZAR",
+  ctaReturn: "NUEVA VIDA",
 };
 
 export const INTRO_BEATS = [

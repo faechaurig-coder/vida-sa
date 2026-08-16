@@ -7,7 +7,6 @@ import {
   SEED_SCREEN,
   STAGE_LABELS,
 } from "../content/intro.js";
-import { ICO } from "../content/present.js";
 import {
   canUpgrade,
   perkSummary,
@@ -16,6 +15,7 @@ import {
   upgradeCost,
 } from "../systems/perks.js";
 import { axisLine } from "./juice.js";
+import { cityBg, icon, radar, seedArt } from "./art.js";
 
 function esc(s) {
   return String(s ?? "")
@@ -39,8 +39,11 @@ export function renderBoot(meta) {
   const returning = (meta.lives ?? 0) > 0;
   return (
     '<section class="screen screen-hero fade-in">' +
-    '<div class="hero-orbit" aria-hidden="true"><span>💰</span><span>❤️</span><span>🏠</span><span>🚗</span><span>💼</span></div>' +
-    '<div class="crown" aria-hidden="true">👑</div>' +
+    '<div class="hero-bg">' +
+    cityBg() +
+    '</div><div class="hero-shade"></div>' +
+    '<div class="hero-content">' +
+    icon("crown") +
     '<p class="eyebrow">' +
     esc(BOOT.eyebrow) +
     "</p>" +
@@ -51,11 +54,9 @@ export function renderBoot(meta) {
     esc(BOOT.lead) +
     "</p>" +
     (returning
-      ? '<div class="hero-stats">' +
-        '<div class="hero-stat"><b>' +
+      ? '<div class="hero-stats"><div class="hero-stat"><b>' +
         (meta.pv ?? 0) +
-        "</b><span>puntos</span></div>" +
-        '<div class="hero-stat"><b>' +
+        "</b><span>puntos</span></div><div class="hero-stat"><b>" +
         (meta.lives ?? 0) +
         "</b><span>vidas</span></div></div>"
       : "") +
@@ -66,9 +67,13 @@ export function renderBoot(meta) {
     esc(returning ? BOOT.ctaReturn : BOOT.cta) +
     "</button>" +
     '<button type="button" class="link-btn" data-act="intro">¿Cómo se juega?</button>' +
+    '<div class="world-lock">' +
+    icon("globe") +
+    icon("lock") +
+    "<span>Mundo 2 · cerrado por ahora</span></div>" +
     '<p class="motto">' +
     esc(BOOT.motto) +
-    "</p></section>"
+    "</p></div></section>"
   );
 }
 
@@ -117,15 +122,12 @@ export function renderSeeds(meta) {
     (returning ? renderPerkSlot(meta) : "") +
     '<div class="seed-grid">' +
     SEEDS.map((s) => {
-      const tags = s.tags ?? [
-        { icon: "✨", text: s.opportunity, kind: "ok" },
-        { icon: "😬", text: s.restriction, kind: "warn" },
-      ];
+      const tags = s.tags ?? [];
       return (
         '<button type="button" class="seed-card" data-act="seed" data-id="' +
         s.id +
         '"><div class="seed-head"><span class="seed-emoji">' +
-        (s.emoji ?? "✨") +
+        seedArt(s.id) +
         '</span><div><span class="seed-title">' +
         esc(s.title) +
         '</span><span class="seed-tension">' +
@@ -148,7 +150,7 @@ function renderPerkSlot(meta) {
   const equipped = meta.equippedPerk;
   return (
     '<div class="perk-panel">' +
-    '<div class="perk-panel-head"><span>🎁 Extra para esta vida</span><span class="perk-panel-pv">' +
+    '<div class="perk-panel-head"><span>Extra para esta vida</span><span class="perk-panel-pv">' +
     pv +
     " pts</span></div>" +
     '<p class="perk-panel-lead">Gasta puntos. Equipa uno. No te gana la vida.</p>' +
@@ -178,9 +180,7 @@ function renderPerkSlot(meta) {
             "</button>"
           : "") +
         (tier < 3
-          ? '<button type="button" class="btn ghost perk-btn' +
-            (canUp ? "" : " is-disabled") +
-            '" data-act="upgrade" data-id="' +
+          ? '<button type="button" class="btn ghost perk-btn" data-act="upgrade" data-id="' +
             p.id +
             '"' +
             (canUp ? "" : " disabled") +
@@ -205,9 +205,7 @@ export function renderLife(run, view) {
     '<section class="screen screen-life fade-in">' +
     '<p class="stage-tag"><span class="stage-pill">' +
     esc(stage) +
-    "</span> · " +
-    run.age +
-    " años</p>" +
+    "</span></p>" +
     '<article class="event-card"><h2>' +
     esc(ev.title) +
     '</h2><p class="card-body">' +
@@ -239,7 +237,6 @@ export function renderPost(view, meta, beat, collapsed) {
   let title = "";
   let body = "";
   let extra = "";
-  const icons = ["👑", "📊", "⭐", "🌅"];
 
   if (cfg.titleKey === "identity") title = r.identity;
   else if (cfg.titleKey === "axes") title = "Así te fue";
@@ -250,6 +247,7 @@ export function renderPost(view, meta, beat, collapsed) {
   else if (cfg.bodyKey === "tradeoff") {
     body = "Conseguiste " + r.got + ". Dejaste " + r.sacrificed + ".";
     extra =
+      radar(r.axes) +
       '<div class="axes-box"><div class="axis-row">' +
       esc(axes.high) +
       '</div><div class="axis-row">' +
@@ -265,11 +263,19 @@ export function renderPost(view, meta, beat, collapsed) {
       (meta.pv ?? 0) +
       ". No compran el final. Sirven para la siguiente.";
 
+  const art =
+    beat === 0
+      ? icon("crown", "art-lg")
+      : beat === 2
+        ? icon("spark", "art-lg")
+        : beat === 3
+          ? icon("globe", "art-lg")
+          : "";
+
   return (
     '<section class="screen screen-post fade-in">' +
-    '<div class="post-icon">' +
-    icons[beat] +
-    "</div>" +
+    '<div class="post-card">' +
+    art +
     '<p class="eyebrow">' +
     esc(cfg.kicker) +
     "</p>" +
@@ -280,11 +286,10 @@ export function renderPost(view, meta, beat, collapsed) {
     esc(body) +
     "</p>" +
     extra +
+    "</div>" +
     (cfg.cta
-      ? '<button type="button" class="btn btn-xl" data-act="again">🚀  Otra vida</button><button type="button" class="btn ghost" data-act="boot">Inicio</button>'
+      ? '<button type="button" class="btn btn-xl" data-act="again">Nueva vida</button><button type="button" class="btn ghost" data-act="boot">Inicio</button>'
       : '<button type="button" class="btn" data-act="beat">Continuar</button>') +
     "</section>"
   );
 }
-
-export { ICO };

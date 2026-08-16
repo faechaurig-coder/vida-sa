@@ -59,6 +59,6 @@ export function lifeProgress(age) {
 }
 
 export function yearsLine(years) {
-  if (years <= 1) return ICO.time + " Un año después…";
-  return ICO.time + " " + years + " años después…";
+  if (years <= 1) return "Un año después…";
+  return years + " años después…";
 }

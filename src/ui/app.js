@@ -1,9 +1,9 @@
 import { choose, hudOf, startLife } from "../engine/play.js";
-import { LIFE_MARKS, lifeProgress, yearsLine } from "../content/present.js";
-import { carLabel, homeLabel } from "../systems/assets.js";
+import { yearsLine } from "../content/present.js";
 import { getPerk } from "../content/perks.js";
 import { emptyMeta, loadSave, rememberLife, saveAll } from "../systems/persist.js";
 import { equipPerk, perkTier, tierLabel, upgradePerk } from "../systems/perks.js";
+import { carArt, character, houseArt, icon, moodFromTone } from "./art.js";
 import { formatMoney, juiceDeltas, juiceHero, juiceTone, snap } from "./juice.js";
 import { renderBoot, renderIntro, renderLife, renderPost, renderSeeds } from "./render.js";
 
@@ -48,7 +48,6 @@ function boot() {
     state.screen = "boot";
     state.introBeat = 0;
   }
-  paintMarks();
   render();
 }
 
@@ -56,33 +55,30 @@ function persist() {
   saveAll(state.meta, state.run && !state.run.ended ? { run: state.run, view: state.view } : null);
 }
 
-function paintMarks() {
-  const el = document.getElementById("life-marks");
-  if (el) el.innerHTML = LIFE_MARKS.map((m) => "<span>" + m.icon + "</span>").join("");
+function setIcon(id, name, on = true) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = icon(name);
+  el.classList.toggle("is-off", !on);
 }
 
 function paintHud() {
-  if (!state.run || (state.screen !== "life" && !juice.classList.contains("is-on"))) {
-    hud.hidden = true;
-    return;
-  }
+  const show = !!state.run && (state.screen === "life" || juice.classList.contains("is-on"));
+  hud.hidden = !show;
+  if (!show) return;
   const h = hudOf(state.run);
-  hud.hidden = false;
+  document.getElementById("hud-avatar").innerHTML = character("idle");
   document.getElementById("hud-age").textContent = h.age + " años";
   document.getElementById("hud-job").textContent = h.job;
   const cash = document.getElementById("hud-money");
   cash.textContent = formatMoney(h.money);
   cash.classList.toggle("is-neg", h.money < 0);
-  document.getElementById("hud-hap").textContent = h.happiness;
-  document.getElementById("hud-hp").textContent = h.health;
-  document.getElementById("home-tier").textContent = homeLabel(h.home);
-  document.getElementById("car-tier").textContent = carLabel(h.car);
-  document.getElementById("rel-tier").textContent = h.partner ? "alguien" : "—";
-  const debt = document.getElementById("debt-tier");
-  debt.hidden = h.debt <= 0;
-  const p = lifeProgress(h.age);
-  document.getElementById("life-fill").style.width = p * 100 + "%";
-  document.getElementById("life-dot").style.left = p * 100 + "%";
+  document.getElementById("hap-vital").innerHTML = icon("hap") + "<b>" + h.happiness + "</b>";
+  document.getElementById("hp-vital").innerHTML = icon("hp") + "<b>" + h.health + "</b>";
+  document.getElementById("home-ico").innerHTML = houseArt(h.home, "");
+  document.getElementById("car-ico").innerHTML = carArt(h.car, "");
+  setIcon("study-ico", "study", state.run.flags?.includes("estudio"));
+  setIcon("fam-ico", "family", !!h.partner);
 }
 
 function paintPerkChip() {
@@ -94,7 +90,7 @@ function paintPerkChip() {
   }
   const perk = getPerk(eq.id);
   chip.hidden = false;
-  chip.textContent = "🎁 " + (perk?.name ?? "Extra") + " · " + tierLabel(eq.tier);
+  chip.textContent = (perk?.name ?? "Extra") + " · " + tierLabel(eq.tier);
 }
 
 function equippedForLife() {
@@ -111,32 +107,44 @@ function showJuice(pack, before, years, deferred) {
   const card = juice.querySelector(".juice-card");
   card.className = "overlay-card juice-card is-" + tone;
   document.getElementById("juice-years").textContent = yearsLine(years);
-  document.getElementById("juice-hero").textContent = hero.icon + " " + hero.text;
+  document.getElementById("juice-char").innerHTML = character(
+    hero.art === "money" && tone === "gain" ? "rich" : moodFromTone(tone),
+  );
+  document.getElementById("juice-hero").textContent = hero.text;
   document.getElementById("juice-line").textContent = pack.view.punchline || "Tu vida cambió.";
   document.getElementById("juice-deltas").innerHTML = deltas
-    .filter((d) => d.key !== "money" || deltas.length < 2)
     .slice(0, 4)
     .map((d) => {
-      if (d.text) return '<div class="delta">' + d.icon + " " + d.label + "<span>" + d.text + "</span></div>";
-      const sign = d.delta > 0 ? "+" : "";
-      const val = d.money ? sign + formatMoney(d.delta).replace("-", "") : sign + d.delta;
+      const cls = d.good ? "up" : "down";
+      if (d.text) {
+        return (
+          '<div class="delta"><span class="delta-left">' +
+          icon(d.art) +
+          d.label +
+          "</span><span>" +
+          d.text +
+          "</span></div>"
+        );
+      }
+      const from = d.money ? formatMoney(d.from) : d.from;
+      const to = d.money ? formatMoney(d.to) : d.to;
       return (
         '<div class="delta ' +
-        (d.good ? "up" : "down") +
-        '">' +
-        d.icon +
-        " " +
+        cls +
+        '"><span class="delta-left">' +
+        icon(d.art) +
         d.label +
-        "<span>" +
-        (d.delta < 0 && d.money ? "-" : "") +
-        val +
+        "</span><span>" +
+        from +
+        " → " +
+        to +
         "</span></div>"
       );
     })
     .join("");
   const hook = document.getElementById("juice-hook");
   hook.hidden = !deferred;
-  hook.textContent = deferred ? "😬 Esto todavía te puede costar…" : "";
+  hook.textContent = deferred ? "Esto todavía te puede costar…" : "";
   juice.classList.add("is-on");
   if (tone === "loss") hud.classList.add("shake");
   setTimeout(() => hud.classList.remove("shake"), 400);
@@ -147,13 +155,12 @@ function hideJuice() {
 }
 
 function showReveal(upgrade) {
-  const kicker = upgrade.kind === "home" ? "🏠 ¡NUEVO HOGAR!" : "🚗 ¡NUEVO COCHE!";
-  document.getElementById("reveal-kicker").textContent = kicker;
+  document.getElementById("reveal-kicker").textContent =
+    upgrade.kind === "home" ? "¡NUEVO HOGAR!" : "¡NUEVO COCHE!";
   document.getElementById("reveal-title").textContent = upgrade.title;
   document.getElementById("reveal-copy").textContent = upgrade.copy;
-  const art = document.getElementById("reveal-art");
-  art.className = "reveal-art " + upgrade.kind;
-  art.textContent = upgrade.kind === "home" ? "🏡" : "🚗";
+  document.getElementById("reveal-art").innerHTML =
+    upgrade.kind === "home" ? houseArt(upgrade.to, "art-xl") : carArt(upgrade.to, "art-xl");
   reveal.classList.add("is-on");
 }
 
@@ -180,7 +187,7 @@ function render() {
   paintHud();
   paintPerkChip();
   topbar.classList.toggle("is-hidden", state.screen === "boot");
-  fineprint.classList.toggle("is-hidden", state.screen === "life");
+  fineprint.classList.toggle("is-hidden", state.screen === "life" || state.screen === "boot");
   document.getElementById("corp-meta").textContent = CORP[state.screen] ?? "VIDA S.A.";
 
   if (state.screen === "boot") {
