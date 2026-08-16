@@ -1,7 +1,15 @@
-import { SEEDS } from "../content/seeds.js";
 import { choose, hudOf, startLife } from "../engine/play.js";
-import { CARS, HOMES } from "../engine/constants.js";
+import { homeLabel, carLabel } from "../systems/assets.js";
+import { getPerk } from "../content/perks.js";
 import { emptyMeta, loadSave, rememberLife, saveAll } from "../systems/persist.js";
+import { equipPerk, perkTier, tierLabel, upgradePerk } from "../systems/perks.js";
+import {
+  renderBoot,
+  renderIntro,
+  renderLife,
+  renderPost,
+  renderSeeds,
+} from "./render.js";
 
 const stageEl = document.getElementById("stage");
 const hud = document.getElementById("hud");
@@ -9,6 +17,7 @@ const reveal = document.getElementById("reveal");
 
 const state = {
   screen: "boot",
+  introBeat: 0,
   run: null,
   view: null,
   beat: 0,
@@ -29,6 +38,7 @@ function boot() {
     state.screen = "life";
   } else {
     state.screen = "boot";
+    state.introBeat = 0;
   }
   render();
 }
@@ -51,8 +61,8 @@ function paintHud() {
   document.getElementById("hud-hp").textContent = h.health;
   document.getElementById("bar-hap").style.width = h.happiness + "%";
   document.getElementById("bar-hp").style.width = h.health + "%";
-  document.getElementById("home-tier").textContent = HOMES[h.home];
-  document.getElementById("car-tier").textContent = CARS[h.car];
+  document.getElementById("home-tier").textContent = homeLabel(h.home);
+  document.getElementById("car-tier").textContent = carLabel(h.car);
   document.getElementById("rel-tier").textContent = h.partner ? "alguien" : "—";
   const debt = document.getElementById("debt-tier");
   debt.hidden = h.debt <= 0;
@@ -70,127 +80,64 @@ function hideReveal() {
   reveal.classList.remove("is-on");
 }
 
+const CORP_META = {
+  boot: "Expediente",
+  intro: "Onboarding",
+  seed: "Origen",
+  life: "En curso",
+  post: "Balance",
+};
+
+function equippedForLife() {
+  const id = state.meta.equippedPerk;
+  if (!id) return null;
+  const tier = perkTier(state.meta, id);
+  if (tier < 1) return null;
+  return { id, tier };
+}
+
+function paintPerkChip() {
+  const chip = document.getElementById("perk-chip");
+  if (!chip) return;
+  const eq = state.run?.equippedPerk;
+  if (!eq || state.screen !== "life") {
+    chip.hidden = true;
+    return;
+  }
+  const perk = getPerk(eq.id);
+  chip.hidden = false;
+  chip.textContent = (perk?.name ?? "Comodín") + " · " + tierLabel(eq.tier);
+}
+
 function render() {
   paintHud();
+  paintPerkChip();
   const meta = document.getElementById("corp-meta");
+  meta.textContent = CORP_META[state.screen] ?? "VIDA S.A.";
+
   if (state.screen === "boot") {
-    meta.textContent = "Playtest";
-    stageEl.innerHTML =
-      '<p class="eyebrow">VIDA S.A. · vertical slice</p>' +
-      "<h1>Tu vida es un producto. Tú eres el KPI.</h1>" +
-      '<p class="lead">Una vida comprimida. Mismo motor que el juego. Elige, paga, termina, vuelve.</p>' +
-      (state.meta.lastEpitaph
-        ? '<p class="tick">Última acta: ' + state.meta.lastEpitaph + "</p>"
-        : "") +
-      '<p class="lead">Puntos de Vida: ' +
-      (state.meta.pv ?? 0) +
-      ". Solo sirven para comodines. No están en la vida.</p>" +
-      '<button type="button" class="btn" data-act="seeds">Nueva vida</button>';
+    stageEl.innerHTML = renderBoot(state.meta);
+    return;
+  }
+  if (state.screen === "intro") {
+    stageEl.innerHTML = renderIntro(state.introBeat);
     return;
   }
   if (state.screen === "seed") {
-    meta.textContent = "Origen";
-    stageEl.innerHTML =
-      '<p class="eyebrow">Esta va a ser tu vida</p>' +
-      "<h2>Elige una tensión. No un modificador.</h2>" +
-      '<div class="choices">' +
-      SEEDS.map(
-        (s) =>
-          '<button type="button" class="choice" data-act="seed" data-id="' +
-          s.id +
-          '"><strong>' +
-          s.title +
-          "</strong><small>" +
-          s.tension +
-          "</small></button>",
-      ).join("") +
-      "</div>";
+    stageEl.innerHTML = renderSeeds(state.meta);
     return;
   }
   if (state.screen === "life") {
     const ev = state.view.event;
-    meta.textContent = ev?.stage ?? "Vida";
     if (!ev) {
       state.screen = "post";
       return render();
     }
-    stageEl.innerHTML =
-      '<p class="stage-tag">' +
-      ev.stage +
-      " · " +
-      state.run.age +
-      " años</p>" +
-      "<h2>" +
-      ev.title +
-      "</h2>" +
-      '<p class="card-body">' +
-      ev.body +
-      "</p>" +
-      '<p class="tick">' +
-      (state.view.punchline || "") +
-      "</p>" +
-      '<div class="choices">' +
-      ev.options
-        .map(
-          (o) =>
-            '<button type="button" class="choice" data-act="opt" data-id="' +
-            o.id +
-            '">' +
-            o.label +
-            "<small>" +
-            o.hint +
-            "</small></button>",
-        )
-        .join("") +
-      "</div>";
+    stageEl.innerHTML = renderLife(state.run, state.view);
     return;
   }
   if (state.screen === "post") {
-    const v = state.view;
-    const r = v.rank;
-    const beats = [
-      {
-        kicker: "Beat 1 · Epitafio",
-        title: r.identity,
-        body: state.run.collapse ? "El cuerpo o la cuenta cerraron el acta antes." : "El juego observa. Tú interpretas.",
-      },
-      {
-        kicker: "Beat 2 · Identidad",
-        title: r.dominant + " alto · " + r.neglected + " bajo",
-        body: "Conseguiste " + r.got + ". Sacrificaste " + r.sacrificed + ".",
-      },
-      {
-        kicker: "Beat 3 · Estuviste cerca",
-        title: v.near ? v.near.text : "Esta vida no estuvo cerca de nada relevante.",
-        body: v.near ? "Una decisión lo dejó a un paso." : "A veces no hay casi. Hay lo que hay.",
-      },
-      {
-        kicker: "Beat 4 · ¿Y si…?",
-        title: v.question,
-        body:
-          "+" +
-          (v.pvAward ?? 0) +
-          " PV esta vida · total " +
-          (state.meta.pv ?? 0) +
-          ". No compran el final. Otra semilla. Una más.",
-        cta: true,
-      },
-    ];
-    const b = beats[state.beat] ?? beats[3];
-    meta.textContent = "Balance";
-    stageEl.innerHTML =
-      '<p class="eyebrow">' +
-      b.kicker +
-      "</p>" +
-      "<h2>" +
-      b.title +
-      "</h2>" +
-      '<p class="lead">' +
-      b.body +
-      "</p>" +
-      (b.cta
-        ? '<button type="button" class="btn" data-act="again">Nueva vida</button><button type="button" class="btn ghost" data-act="boot">Inicio</button>'
-        : '<button type="button" class="btn" data-act="beat">Continuar</button>');
+    stageEl.innerHTML = renderPost(state.view, state.meta, state.beat, state.run?.collapse);
   }
 }
 
@@ -198,6 +145,20 @@ stageEl.addEventListener("click", (e) => {
   const btn = e.target.closest("[data-act]");
   if (!btn) return;
   const act = btn.getAttribute("data-act");
+
+  if (act === "intro") {
+    state.screen = "intro";
+    state.introBeat = 0;
+    return render();
+  }
+  if (act === "intro-next") {
+    state.introBeat = Math.min(2, state.introBeat + 1);
+    return render();
+  }
+  if (act === "intro-back") {
+    state.introBeat = Math.max(0, state.introBeat - 1);
+    return render();
+  }
   if (act === "seeds") {
     state.screen = "seed";
     return render();
@@ -219,10 +180,22 @@ stageEl.addEventListener("click", (e) => {
     return render();
   }
   if (act === "seed") {
-    const pack = startLife(btn.getAttribute("data-id"));
+    const pack = startLife(btn.getAttribute("data-id"), equippedForLife());
     state.run = pack.run;
     state.view = pack.view;
     state.screen = "life";
+    persist();
+    return render();
+  }
+  if (act === "equip") {
+    const res = equipPerk(state.meta, btn.getAttribute("data-id"));
+    if (res.ok) state.meta = res.meta;
+    persist();
+    return render();
+  }
+  if (act === "upgrade") {
+    const res = upgradePerk(state.meta, btn.getAttribute("data-id"));
+    if (res.ok) state.meta = res.meta;
     persist();
     return render();
   }
@@ -230,9 +203,7 @@ stageEl.addEventListener("click", (e) => {
     const pack = choose(state.run, btn.getAttribute("data-id"));
     state.run = pack.run;
     state.view = pack.view;
-    if (pack.view.upgrade) {
-      showReveal(pack.view.upgrade);
-    }
+    if (pack.view.upgrade) showReveal(pack.view.upgrade);
     if (pack.run.ended) {
       state.screen = "post";
       state.beat = 0;

@@ -9,8 +9,8 @@ import { computeNearMiss } from "../systems/nearMiss.js";
 import { assetCopy } from "../systems/assets.js";
 import { awardPv } from "../systems/pv.js";
 
-export function startLife(seedId) {
-  return present(fillEvent(createRun(seedId)));
+export function startLife(seedId, equipped = null) {
+  return present(fillEvent(createRun(seedId, equipped)));
 }
 
 export function choose(run, optionId, catalog = EVENTS) {

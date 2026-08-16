@@ -16,6 +16,9 @@ export function tickYears(run, years) {
   };
 }
 
+import { DEFAULT_COLLAPSE_MONEY } from "../data/balance.js";
+
 export function shouldCollapse(run) {
-  return run.health <= 0 || run.money <= -400;
+  const floor = run.collapseMoney ?? DEFAULT_COLLAPSE_MONEY;
+  return run.health <= 0 || run.money <= floor;
 }

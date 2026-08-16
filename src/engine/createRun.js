@@ -1,10 +1,11 @@
 import { getSeed } from "../content/seeds.js";
+import { applyPerkToRun } from "../systems/perks.js";
 
-export function createRun(seedId) {
+export function createRun(seedId, equipped = null) {
   const seed = getSeed(seedId);
   if (!seed) throw new Error("Semilla desconocida: " + seedId);
   const s = seed.start;
-  return {
+  let run = {
     seedId,
     age: s.age,
     stage: "formacion",
@@ -30,5 +31,11 @@ export function createRun(seedId) {
     ended: false,
     collapse: false,
     cardsPlayed: 0,
+    collapseMoney: null,
+    equippedPerk: null,
   };
+  if (equipped?.id && equipped.tier > 0) {
+    run = applyPerkToRun(run, equipped.id, equipped.tier);
+  }
+  return run;
 }

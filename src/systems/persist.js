@@ -1,3 +1,5 @@
+import { emptyPerkTiers } from "./perks.js";
+
 const KEY = "vida-sa-slice";
 
 export function loadSave() {
@@ -6,7 +8,11 @@ export function loadSave() {
     if (!raw) return { meta: emptyMeta(), session: null };
     const data = JSON.parse(raw);
     return {
-      meta: { ...emptyMeta(), ...data.meta },
+      meta: {
+        ...emptyMeta(),
+        ...data.meta,
+        perkTiers: { ...emptyPerkTiers(), ...data.meta?.perkTiers },
+      },
       session: data.session ?? null,
     };
   } catch {
@@ -28,6 +34,8 @@ export function emptyMeta() {
     seeds: [],
     maxHome: 0,
     maxCar: 0,
+    equippedPerk: null,
+    perkTiers: emptyPerkTiers(),
   };
 }
 
