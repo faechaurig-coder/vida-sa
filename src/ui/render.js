@@ -56,7 +56,7 @@ export function renderBoot(meta) {
     (returning
       ? '<div class="hero-stats"><div class="hero-stat"><b>' +
         (meta.pv ?? 0) +
-        "</b><span>puntos</span></div><div class="hero-stat"><b>" +
+        '</b><span>puntos</span></div><div class="hero-stat"><b>' +
         (meta.lives ?? 0) +
         "</b><span>vidas</span></div></div>"
       : "") +
