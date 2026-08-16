@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>VIDA S.A.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <div class="phone">
+    <header class="corp-bar">
+      <div class="logo">VIDA S.A.</div>
+      <div class="corp-meta" id="corp-meta">Informe trimestral</div>
+    </header>
+
+    <div class="hud" id="hud" hidden>
+      <div class="hud-row">
+        <span id="hud-age">0</span>
+        <span class="hud-job" id="hud-job">—</span>
+        <span class="money" id="hud-money">$0</span>
+      </div>
+      <div class="hud-bars">
+        <div>
+          <label>Felicidad <b id="hud-hap">—</b></label>
+          <div class="bar"><i id="bar-hap"></i></div>
+        </div>
+        <div>
+          <label>Salud <b id="hud-hp">—</b></label>
+          <div class="bar"><i id="bar-hp"></i></div>
+        </div>
+      </div>
+      <div class="hud-assets">
+        <div class="asset"><span class="asset-icon">⌂</span><span id="home-tier">—</span></div>
+        <div class="asset"><span class="asset-icon">▣</span><span id="car-tier">—</span></div>
+        <div class="asset"><span class="asset-icon">○</span><span id="rel-tier">—</span></div>
+        <div class="asset debt" id="debt-tier" hidden></div>
+      </div>
+    </div>
+
+    <main id="stage"></main>
+    <footer class="fineprint">Vertical slice · playtest</footer>
+
+    <div class="reveal" id="reveal" aria-hidden="true">
+      <div class="reveal-card">
+        <p class="eyebrow">Por fin</p>
+        <div class="reveal-art" id="reveal-art"></div>
+        <h2 id="reveal-title"></h2>
+        <p id="reveal-copy"></p>
+        <button type="button" class="btn" id="reveal-ok">Continuar</button>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="src/ui/app.js"></script>
+</body>
+</html>
