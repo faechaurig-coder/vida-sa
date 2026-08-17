@@ -19,16 +19,19 @@
     <div class="perk-chip" id="perk-chip" hidden></div>
 
     <div class="hud" id="hud" hidden>
-      <div class="hud-main">
+      <div class="hud-top">
         <div class="hud-who">
           <span class="hud-avatar" id="hud-avatar"></span>
-          <div>
-            <strong id="hud-date">ENERO 2026</strong>
-            <span class="hud-job" id="hud-age">—</span>
-            <span class="hud-job" id="hud-job">—</span>
+          <div class="hud-id">
+            <strong id="hud-name">Tú</strong>
+            <span class="hud-life" id="hud-life">—</span>
+            <span class="hud-role" id="hud-role" hidden></span>
           </div>
         </div>
-        <div class="hud-cash" id="hud-money">$0</div>
+        <div class="hud-cash-wrap">
+          <span class="hud-cash-ico" aria-hidden="true">💰</span>
+          <span class="hud-cash" id="hud-money">$0</span>
+        </div>
       </div>
       <div class="hud-vitals">
         <span class="vital" id="hp-vital" title="Salud"></span>
@@ -36,11 +39,9 @@
         <span class="vital" id="inf-vital" title="Influencia"></span>
         <span class="vital" id="evil-vital" title="Maldad"></span>
       </div>
-      <div class="hud-assets">
-        <div class="asset-ico" id="home-ico" title="Casa"></div>
-        <div class="asset-ico" id="car-ico" title="Coche"></div>
-        <div class="asset-ico" id="study-ico" title="Estudios"></div>
-        <div class="asset-ico" id="fam-ico" title="Familia"></div>
+      <div class="hud-context">
+        <span id="hud-date">ENERO 2026</span>
+        <span class="hud-extra" id="hud-extra"></span>
       </div>
     </div>
 
@@ -55,8 +56,11 @@
     </main>
     <footer class="fineprint" id="fineprint">Cada decisión cuenta.</footer>
 
+    <nav class="bottom-nav" id="bottom-nav" hidden aria-label="Navegación principal"></nav>
+
     <div class="overlay juice" id="juice" aria-hidden="true">
       <div class="overlay-card juice-card">
+        <p class="juice-kicker" id="juice-kicker">Decisión tomada</p>
         <p class="juice-years" id="juice-years"></p>
         <div class="juice-char" id="juice-char"></div>
         <div class="juice-hero" id="juice-hero"></div>
@@ -74,6 +78,16 @@
         <h2 id="reveal-title"></h2>
         <p id="reveal-copy"></p>
         <button type="button" class="btn" id="reveal-ok">Continuar</button>
+      </div>
+    </div>
+
+    <div class="overlay unlock" id="unlock" aria-hidden="true">
+      <div class="overlay-card unlock-card">
+        <p class="eyebrow" id="unlock-kicker">NUEVO DESBLOQUEO</p>
+        <div class="unlock-emoji" id="unlock-emoji">✨</div>
+        <h2 id="unlock-title"></h2>
+        <p id="unlock-copy"></p>
+        <button type="button" class="btn" id="unlock-ok">Continuar</button>
       </div>
     </div>
   </div>

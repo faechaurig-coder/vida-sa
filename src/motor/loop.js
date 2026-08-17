@@ -1,46 +1,50 @@
 import { createStats } from "../foundation/stats.js";
 import { createCalendar, computeAge, advanceMonth as nextMonth, formatMonthYear } from "../foundation/time.js";
 import { stageForAge } from "../foundation/stages.js";
-import { createEmptyCollection } from "../foundation/collectibles/registry.js";
 import { partnerMonthlyEffect } from "../foundation/relationships/partner.js";
 import { applyStatDelta } from "../foundation/stats.js";
 import { pickEvent, registerEventPlayed, ageDeferred } from "./picker.js";
 import { createPartner } from "../foundation/relationships/partner.js";
 import { applyOptionEffects, tickEconomy, snapPlayer, deltaFromSnap } from "./effects.js";
 import { meetsRequirements } from "./requirements.js";
-import { getCatalog } from "../content/worlds/index.js";
+import { getCatalog, getWorldDef, getWorldMissions } from "../content/worlds/index.js";
 import { checkMissionProgress } from "./missions.js";
+import { initGameCollection, syncCollectionFromPlayer } from "./collection.js";
+import { detectUnlocks } from "./unlocks.js";
 
 export function createGame(config = {}) {
   const birth = createCalendar(config.birthYear ?? 2018, config.birthMonth ?? 1);
   const calendar = createCalendar(config.startYear ?? 2026, config.startMonth ?? 1);
   const age = computeAge(birth, calendar);
+  const worldId = config.worldId ?? "clasico";
+  const worldDef = getWorldDef(worldId);
+  const basePlayer = {
+    name: config.name ?? "Tú",
+    worldId,
+    birth,
+    calendar,
+    age,
+    stage: stageForAge(age),
+    stats: createStats(config.stats ?? {}),
+    job: config.job ?? null,
+    careerId: config.careerId ?? null,
+    partner: config.partner ?? null,
+    fame: null,
+    flags: [...(config.flags ?? [])],
+    stories: config.stories ?? {},
+    collection: config.collection ?? initGameCollection(worldDef?.collectibles),
+    decisions: [],
+    home: config.home ?? 0,
+    car: config.car ?? 0,
+    debt: config.debt ?? 0,
+    income: config.income ?? 0,
+    expenses: config.expenses ?? 0,
+    originId: config.originId ?? null,
+  };
 
   return {
-    worldId: config.worldId ?? "clasico",
-    player: {
-      name: config.name ?? "Tú",
-      worldId: config.worldId ?? "clasico",
-      birth,
-      calendar,
-      age,
-      stage: stageForAge(age),
-      stats: createStats(config.stats ?? {}),
-      job: config.job ?? null,
-      careerId: config.careerId ?? null,
-      partner: config.partner ?? null,
-      fame: null,
-      flags: [...(config.flags ?? [])],
-      stories: {},
-      collection: config.collection ?? createEmptyCollection(),
-      decisions: [],
-      home: config.home ?? 0,
-      car: config.car ?? 0,
-      debt: config.debt ?? 0,
-      income: config.income ?? 0,
-      expenses: config.expenses ?? 0,
-      originId: config.originId ?? null,
-    },
+    worldId,
+    player: syncCollectionFromPlayer(basePlayer),
     pendingEvent: null,
     storyContext: null,
     forcedEventId: null,
@@ -51,7 +55,10 @@ export function createGame(config = {}) {
     lastResult: null,
     phase: "idle",
     monthsPlayed: 0,
-    missions: { completed: [], active: null },
+    missions: config.missions ?? {
+      completed: [],
+      active: getWorldMissions(worldId)[0]?.id ?? null,
+    },
     ended: false,
   };
 }
@@ -93,6 +100,10 @@ export function resolveDecision(game, optionId) {
     throw new Error("Opción no disponible");
   }
 
+  const beforeSnap = {
+    player: game.player,
+    missions: game.missions,
+  };
   const before = snapPlayer(game.player);
   const raw = option.effects ?? option.immediate ?? {};
   let player = applyOptionEffects(game.player, raw);
@@ -101,6 +112,7 @@ export function resolveDecision(game, optionId) {
   if (option.storyProgress) {
     player = applyStoryProgress(player, option.storyProgress);
   }
+  player = syncCollectionFromPlayer(player);
   if (option.unlock?.fame) {
     player.fame = { line: option.unlock.fame, level: 1 };
     if (!player.flags.includes("fame_" + option.unlock.fame)) {
@@ -155,6 +167,14 @@ export function resolveDecision(game, optionId) {
   );
 
   next = checkMissionProgress(next);
+  const unlocks = detectUnlocks(beforeSnap, next);
+  next = {
+    ...next,
+    lastResult: {
+      ...next.lastResult,
+      unlocks,
+    },
+  };
   return next;
 }
 
@@ -182,7 +202,13 @@ function refreshAge(player) {
 
 function applyStoryProgress(player, prog) {
   const id = prog.storyId;
-  const prev = player.stories[id] ?? { storyId: id, discoveredChapters: [], currentChapter: null, completed: false };
+  const prev = player.stories[id] ?? {
+    storyId: id,
+    discoveredChapters: [],
+    currentChapter: null,
+    discovered: false,
+    completed: false,
+  };
   const chapters = prog.chapterId
     ? [...new Set([...prev.discoveredChapters, prog.chapterId])]
     : prev.discoveredChapters;
@@ -192,9 +218,10 @@ function applyStoryProgress(player, prog) {
       ...player.stories,
       [id]: {
         ...prev,
+        discovered: true,
         currentChapter: prog.chapterId ?? prev.currentChapter,
         discoveredChapters: chapters,
-        completed: !!prog.completed,
+        completed: !!prog.completed || prev.completed,
       },
     },
     flags:
@@ -231,6 +258,8 @@ export function eventForUI(event) {
     body: event.description ?? event.body ?? "",
     stage: event.stage,
     category: event.category,
+    kind: event.kind ?? event.eventType ?? null,
+    storyId: event.storyId ?? null,
     options: (event.options ?? []).map((o) => ({
       id: o.id,
       label: o.text ?? o.label,

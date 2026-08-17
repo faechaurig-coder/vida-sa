@@ -54,7 +54,7 @@ export function juiceDeltas(before, after) {
 }
 
 export function juiceHero(deltas) {
-  const money = deltas.find((d) => d.key === "money");
+  const money = deltas.find((d) => d.key === "money" || d.key === "dinero");
   if (money) {
     const sign = money.delta > 0 ? "+" : "";
     return {

@@ -1,17 +1,24 @@
 export { STAT_KEYS, LIFE_STAGES, STORY_TYPES, CAREER_TIERS, MONTH_NAMES } from "../foundation/constants.js";
+export {
+  CONTENT_CATEGORIES,
+  EVENT_KINDS,
+  LIFE_STAGE_IDS,
+  CATEGORY_LABELS,
+  EVENT_KIND_LABELS,
+} from "../content/catalog/taxonomy.js";
 
-/** Categorías de decisión — extensible sin tocar motor. */
+/** @deprecated Usar CONTENT_CATEGORIES del catálogo. */
 export const CATEGORIES = [
   "familia",
-  "estudios",
+  "amistad",
+  "escuela",
   "trabajo",
   "dinero",
-  "relaciones",
   "salud",
-  "social",
-  "ocio",
-  "eventos",
-  "historias",
+  "relaciones",
+  "personalidad",
+  "oportunidad",
+  "especial",
 ];
 
 export const EVENT_TYPES = {

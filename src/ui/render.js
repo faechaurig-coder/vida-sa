@@ -5,7 +5,6 @@ import {
   INTRO_BEATS,
   POST_BEATS,
   SEED_SCREEN,
-  STAGE_LABELS,
 } from "../content/intro.js";
 import {
   canUpgrade,
@@ -17,7 +16,7 @@ import {
 import { axisLine } from "./juice.js";
 import { cityBg, icon, radar, seedArt } from "./art.js";
 import { listPlayableWorlds } from "../content/worlds/index.js";
-import { STAGE_LABELS as MOTOR_STAGES } from "../motor/constants.js";
+import { categoryVis, discoveryHints, lifeIdentity } from "./life-view.js";
 
 function esc(s) {
   return String(s ?? "")
@@ -199,37 +198,72 @@ function renderPerkSlot(meta) {
   );
 }
 
-export function renderLife(run, view) {
+export function renderLife(game, view) {
   const ev = view.event;
-  const stage = STAGE_LABELS[ev.stage] ?? MOTOR_STAGES[ev.stage] ?? ev.stage;
+  const player = game?.player ?? {};
+  const cat = categoryVis(ev.category);
   const body = ev.body ?? ev.description ?? "";
-  const tones = ["choice-a", "choice-b", "choice-c"];
+  const identity = lifeIdentity(player, game?.worldId);
+  const hints = discoveryHints(player);
+  const tones = ["choice-a", "choice-b", "choice-c", "choice-d"];
+  const isStory = ev.kind === "story" || ev.storyId;
+
+  const chips = [];
+  if (identity.partner) chips.push('<span class="life-chip is-heart">❤️ Relación</span>');
+  if (identity.fame) chips.push('<span class="life-chip is-star">⭐ Fama</span>');
+  if (identity.career?.tierLabel && identity.occupation) {
+    chips.push('<span class="life-chip is-job">' + esc(identity.career.tierLabel) + "</span>");
+  }
+
   return (
-    '<section class="screen screen-life fade-in">' +
-    '<p class="stage-tag"><span class="stage-pill">' +
-    esc(stage) +
-    "</span></p>" +
-    '<article class="event-card"><h2>' +
+    '<section class="screen screen-life fade-in" data-world="' +
+    esc(identity.worldId) +
+    '">' +
+    (chips.length ? '<div class="life-chips">' + chips.join("") + "</div>" : "") +
+    '<article class="event-card' +
+    (isStory ? " is-story" : "") +
+    " cat-" +
+    esc(ev.category || "especial") +
+    '">' +
+    '<p class="event-cat"><span class="event-cat-ico">' +
+    cat.emoji +
+    "</span>" +
+    esc(cat.label) +
+    "</p>" +
+    "<h2>" +
     esc(ev.title) +
     '</h2><p class="card-body">' +
     esc(body) +
     "</p></article>" +
+    '<p class="choose-prompt">¿Qué haces?</p>' +
     '<div class="choices">' +
     ev.options
-      .map(
-        (o, i) =>
+      .map((o, i) => {
+        const hint = o.hint ? '<small class="choice-hint">' + esc(o.hint) + "</small>" : "";
+        return (
           '<button type="button" class="choice ' +
-          tones[i % 3] +
+          tones[i % 4] +
           '" data-act="opt" data-id="' +
           o.id +
-          '"><span class="choice-label">' +
+          '"><span class="choice-mark">' +
+          (i + 1) +
+          '</span><span class="choice-copy"><span class="choice-label">' +
           esc(o.label) +
-          '</span><small class="choice-hint">' +
-          esc(o.hint) +
-          "</small></button>",
-      )
+          "</span>" +
+          hint +
+          "</span></button>"
+        );
+      })
       .join("") +
-    "</div></section>"
+    "</div>" +
+    (hints.length
+      ? '<div class="discover-row">' +
+        hints
+          .map((h) => '<span class="discover-chip">' + (h.kind === "fame" ? "⭐ " : "✨ ") + esc(h.text) + "</span>")
+          .join("") +
+        "</div>"
+      : "") +
+    "</section>"
   );
 }
 

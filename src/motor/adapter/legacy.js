@@ -1,9 +1,10 @@
 import { mapLegacyStage } from "../requirements.js";
 import { EVENT_TYPES } from "../constants.js";
+import { EVENT_KINDS, normalizeCategory } from "../../content/catalog/taxonomy.js";
 
 const LEGACY_CATEGORY = {
-  el_atajo: "estudios",
-  el_finde: "ocio",
+  el_atajo: "escuela",
+  el_finde: "oportunidad",
   el_techo: "dinero",
   primer_contrato: "trabajo",
   synergy: "trabajo",
@@ -12,7 +13,7 @@ const LEGACY_CATEGORY = {
   la_hipoteca: "dinero",
   la_cuota: "dinero",
   la_factura: "salud",
-  el_acta: "eventos",
+  el_acta: "especial",
 };
 
 /** Convierte eventos legacy (slice capitalismo) al schema del motor mensual. */
@@ -20,8 +21,10 @@ export function adaptLegacyEvents(legacyEvents, worldId = "capitalismo") {
   return legacyEvents.map((ev) => ({
     id: ev.id,
     worldId,
+    _legacy: true,
     stage: mapLegacyStage(ev.stage),
-    category: LEGACY_CATEGORY[ev.id] ?? "eventos",
+    category: normalizeCategory(LEGACY_CATEGORY[ev.id] ?? "especial"),
+    kind: ev.beat ? EVENT_KINDS.IMPORTANT : EVENT_KINDS.WORLD,
     eventType: ev.storyId ? EVENT_TYPES.STORY : EVENT_TYPES.LIFE,
     title: ev.title,
     description: ev.body,
@@ -45,6 +48,7 @@ export function adaptLegacyEvents(legacyEvents, worldId = "capitalismo") {
     cooldown: ev.beat ? 12 : 6,
     tags: [mapLegacyStage(ev.stage)],
     exclusive: false,
+    repeatable: true,
     storyId: ev.storyId,
   }));
 }

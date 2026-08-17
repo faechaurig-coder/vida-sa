@@ -1,6 +1,8 @@
+import { defineEvent } from "../../catalog/schema.js";
+import { EVENT_KINDS } from "../../catalog/taxonomy.js";
 import { EVENT_TYPES } from "../../../motor/constants.js";
 
-const ev = (spec) => ({ eventType: EVENT_TYPES.LIFE, weight: 1, cooldown: 5, worldId: "clasico", ...spec });
+const ev = (spec) => defineEvent({ worldId: "clasico", ...spec });
 
 export const CLASSIC_EVENTS = [
   // —— INFANCIA ——
@@ -40,8 +42,9 @@ export const CLASSIC_EVENTS = [
   ev({
     id: "c_inf_musica",
     stage: "infancia",
-    category: "historias",
+    category: "escuela",
     eventType: EVENT_TYPES.STORY,
+    kind: EVENT_KINDS.STORY,
     storyId: "cantante",
     chapterId: "interes_musica",
     title: "La clase de música",
@@ -59,8 +62,9 @@ export const CLASSIC_EVENTS = [
   ev({
     id: "c_inf_futbol",
     stage: "infancia",
-    category: "historias",
+    category: "oportunidad",
     eventType: EVENT_TYPES.STORY,
+    kind: EVENT_KINDS.STORY,
     storyId: "futbolista",
     chapterId: "primer_balón",
     title: "El balón nuevo",
@@ -92,6 +96,7 @@ export const CLASSIC_EVENTS = [
     id: "c_ado_trabajo_verano",
     stage: "adolescencia",
     category: "trabajo",
+    kind: EVENT_KINDS.IMPORTANT,
     title: "Trabajo de verano",
     description: "Una tienda del barrio busca ayudante. Paga poco pero es tu primer sueldo.",
     options: [
@@ -113,7 +118,8 @@ export const CLASSIC_EVENTS = [
   ev({
     id: "c_ado_moral_cartera",
     stage: "adolescencia",
-    category: "dinero",
+    category: "personalidad",
+    kind: EVENT_KINDS.IMPORTANT,
     title: "La cartera encontrada",
     description: "Encuentras una cartera con dinero en el pasillo del colegio.",
     options: [
@@ -124,8 +130,9 @@ export const CLASSIC_EVENTS = [
   ev({
     id: "c_ado_escritor_diario",
     stage: "adolescencia",
-    category: "historias",
+    category: "oportunidad",
     eventType: EVENT_TYPES.STORY,
+    kind: EVENT_KINDS.STORY,
     storyId: "escritor",
     chapterId: "primer_diario",
     title: "El cuaderno secreto",
@@ -156,8 +163,9 @@ export const CLASSIC_EVENTS = [
   ev({
     id: "c_uni_cantante_juegos",
     stage: "universidad",
-    category: "historias",
+    category: "oportunidad",
     eventType: EVENT_TYPES.STORY,
+    kind: EVENT_KINDS.STORY,
     storyId: "cantante",
     chapterId: "juegos_uni",
     requirements: { flags: ["clases_musica"] },
@@ -177,8 +185,9 @@ export const CLASSIC_EVENTS = [
   ev({
     id: "c_uni_cantante_productor",
     stage: "universidad",
-    category: "historias",
+    category: "oportunidad",
     eventType: EVENT_TYPES.STORY,
+    kind: EVENT_KINDS.STORY,
     storyId: "cantante",
     chapterId: "productor",
     requirements: { flags: ["clases_musica"] },
@@ -214,8 +223,9 @@ export const CLASSIC_EVENTS = [
   ev({
     id: "c_uni_emprendedor_idea",
     stage: "universidad",
-    category: "historias",
+    category: "oportunidad",
     eventType: EVENT_TYPES.STORY,
+    kind: EVENT_KINDS.STORY,
     storyId: "emprendedor",
     chapterId: "idea",
     title: "La idea en una servilleta",
@@ -268,8 +278,9 @@ export const CLASSIC_EVENTS = [
   ev({
     id: "c_adu_cantante_primer_show",
     stage: "adultez",
-    category: "historias",
+    category: "trabajo",
     eventType: EVENT_TYPES.STORY,
+    kind: EVENT_KINDS.STORY,
     storyId: "cantante",
     chapterId: "primer_show",
     requirements: { flags: ["clases_musica"] },
@@ -289,8 +300,9 @@ export const CLASSIC_EVENTS = [
   ev({
     id: "c_adu_actor_casting",
     stage: "adultez",
-    category: "historias",
+    category: "oportunidad",
     eventType: EVENT_TYPES.STORY,
+    kind: EVENT_KINDS.STORY,
     storyId: "actor",
     chapterId: "casting",
     title: "El casting",
@@ -308,8 +320,9 @@ export const CLASSIC_EVENTS = [
   ev({
     id: "c_adu_futbol_prueba",
     stage: "adultez",
-    category: "historias",
+    category: "oportunidad",
     eventType: EVENT_TYPES.STORY,
+    kind: EVENT_KINDS.STORY,
     storyId: "futbolista",
     chapterId: "prueba",
     requirements: { flags: ["futbol_nino"] },
@@ -341,7 +354,8 @@ export const CLASSIC_EVENTS = [
   ev({
     id: "c_adu_maldad_atajo",
     stage: "adultez",
-    category: "eventos",
+    category: "especial",
+    kind: EVENT_KINDS.SPECIAL,
     requirements: { evilMin: 15 },
     title: "El atajo sucio",
     description: "Conoces una forma rápida de ganar dinero. No es exactamente legal.",

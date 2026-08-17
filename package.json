@@ -4,6 +4,6 @@
   "type": "module",
   "scripts": {
     "start": "node scripts/dev-server.mjs",
-    "test": "node --test tests/*.test.js tests/foundation/*.test.js tests/motor/*.test.js"
+    "test": "node --test tests/*.test.js tests/foundation/*.test.js tests/motor/*.test.js tests/phase5/*.test.js tests/phase6/*.test.js tests/phase7/*.test.js"
   }
 }
