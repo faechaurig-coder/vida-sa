@@ -82,6 +82,22 @@ export function juiceTone(deltas) {
   return "mix";
 }
 
+export function juiceOutcomeEmoji(tone) {
+  if (tone === "gain") return "😊";
+  if (tone === "loss") return "😔";
+  return "🤔";
+}
+
+export function juiceKicker(tone) {
+  if (tone === "gain") return "¡Buena decisión!";
+  if (tone === "loss") return "Tuvo sus costos";
+  return "Vida en equilibrio";
+}
+
+export function deltaOutcomeEmoji(isUp) {
+  return isUp ? "📈" : "📉";
+}
+
 export function formatMoney(n) {
   const sign = n < 0 ? "-" : "";
   return sign + "$" + Math.abs(Math.round(n));

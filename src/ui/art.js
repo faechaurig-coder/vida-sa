@@ -12,6 +12,7 @@ const DEFS =
   '<linearGradient id="g-orange" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F0A050"/><stop offset="1" stop-color="#C06028"/></linearGradient>' +
   '<radialGradient id="g-sun" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FFF8C0"/><stop offset=".6" stop-color="#FFE08A"/><stop offset="1" stop-color="#F0A040"/></radialGradient>' +
   '<filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#1A1010" flood-opacity="0.25"/></filter>' +
+  '<filter id="deep-shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#1A1010" flood-opacity="0.35"/></filter>' +
   "</defs>";
 
 const svg = (inner, vb = "0 0 64 64", cls = "") =>
@@ -190,37 +191,65 @@ export function seedArt(id) {
   return icon("tools", "art-seed");
 }
 
+export function logoMark(cls = "art-logo") {
+  return svg(
+    '<rect x="6" y="6" width="52" height="52" rx="16" fill="url(#g-gold)" filter="url(#deep-shadow)"/>' +
+      '<rect x="8" y="8" width="48" height="48" rx="14" fill="url(#g-gold)" opacity=".35"/>' +
+      '<path d="M32 16 C24 28 18 34 18 40 a6 6 0 0 0 12 0 C30 36 32 34 32 34 C32 34 34 36 38 40 a6 6 0 0 0 12 0 C46 34 40 28 32 16Z" fill="#FFF8E8" filter="url(#soft-shadow)"/>' +
+      '<path d="M22 44 L32 36 L42 44" fill="none" stroke="#C4922A" stroke-width="2.5" stroke-linecap="round" opacity=".55"/>' +
+      '<circle cx="32" cy="30" r="3" fill="#FFFDE0"/>',
+    "0 0 64 64",
+    cls,
+  );
+}
+
 export function character(mood = "idle") {
   const mouth =
     mood === "happy"
-      ? '<path d="M26 40 Q32 46 38 40" fill="none" stroke="#5A3A20" stroke-width="2.4" stroke-linecap="round"/>'
+      ? '<path d="M25 41 Q32 48 39 41" fill="none" stroke="#4A3020" stroke-width="2.6" stroke-linecap="round"/>'
       : mood === "rich"
-        ? '<path d="M26 39 Q32 47 38 39" fill="none" stroke="#5A3A20" stroke-width="2.6" stroke-linecap="round"/><circle cx="44" cy="22" r="5" fill="url(#g-gold)"/>'
+        ? '<path d="M25 40 Q32 49 39 40" fill="none" stroke="#4A3020" stroke-width="2.8" stroke-linecap="round"/><circle cx="46" cy="20" r="5.5" fill="url(#g-gold)" filter="url(#soft-shadow)"/>'
         : mood === "tired"
-          ? '<path d="M26 42 Q32 38 38 42" fill="none" stroke="#5A3A20" stroke-width="2.2" stroke-linecap="round"/>'
+          ? '<path d="M26 43 Q32 39 38 43" fill="none" stroke="#4A3020" stroke-width="2.4" stroke-linecap="round"/>'
           : mood === "worry"
-            ? '<path d="M27 42 L37 42" stroke="#5A3A20" stroke-width="2.2" stroke-linecap="round"/>'
-            : '<path d="M27 41 Q32 44 37 41" fill="none" stroke="#5A3A20" stroke-width="2" stroke-linecap="round"/>';
+            ? '<path d="M27 43 L37 43" stroke="#4A3020" stroke-width="2.4" stroke-linecap="round"/>'
+            : '<path d="M27 42 Q32 45 37 42" fill="none" stroke="#4A3020" stroke-width="2.2" stroke-linecap="round"/>';
   const brow =
     mood === "worry"
-      ? '<path d="M22 26 L28 28M36 28 L42 26" stroke="#5A3A20" stroke-width="2" stroke-linecap="round"/>'
+      ? '<path d="M21 27 L28 29M36 29 L43 27" stroke="#4A3020" stroke-width="2.2" stroke-linecap="round"/>'
       : mood === "tired"
-        ? '<path d="M22 28 L28 28M36 28 L42 28" stroke="#5A3A20" stroke-width="2" stroke-linecap="round"/>'
-        : "";
+        ? '<path d="M21 29 L28 29M36 29 L43 29" stroke="#4A3020" stroke-width="2.2" stroke-linecap="round"/>'
+        : '<path d="M21 28 Q27 25 29 28M35 28 Q37 25 43 28" stroke="#4A3020" stroke-width="1.8" stroke-linecap="round" fill="none" opacity=".7"/>';
   const shirtGrad =
     mood === "rich" ? "g-gold" : mood === "tired" ? "g-orange" : "g-blue";
+  const hair =
+    mood === "rich"
+      ? '<path d="M18 28 C18 14 26 10 32 10 C38 10 46 14 46 28 C44 20 38 16 32 16 C26 16 20 20 18 28Z" fill="#3A2820"/>'
+      : '<path d="M17 30 C17 15 24 11 32 11 C40 11 47 15 47 30 C45 22 39 17 32 17 C25 17 19 22 17 30Z" fill="#4A3428"/>';
+  const cheeks =
+    mood === "happy" || mood === "rich"
+      ? '<ellipse cx="22" cy="35" rx="3" ry="2" fill="#E2556A" opacity=".35"/><ellipse cx="42" cy="35" rx="3" ry="2" fill="#E2556A" opacity=".35"/>'
+      : mood === "worry"
+        ? '<ellipse cx="22" cy="36" rx="2.5" ry="1.8" fill="#C4922A" opacity=".2"/>'
+        : "";
+  const sparkle =
+    mood === "happy" || mood === "rich"
+      ? '<path d="M50 14 L51 17 L54 18 L51 19 L50 22 L49 19 L46 18 L49 17Z" fill="#FFE08A" opacity=".9"/>'
+      : "";
   return svg(
-    '<ellipse cx="32" cy="58" rx="20" ry="8" fill="#1A1010" opacity=".2"/>' +
-      '<path d="M16 58c0-14 8-20 16-20s16 6 16 20" fill="url(#' +
+    '<ellipse cx="32" cy="58" rx="22" ry="7" fill="#1A1010" opacity=".22"/>' +
+      '<path d="M14 36 C10 44 10 54 14 58 L50 58 C54 54 54 44 50 36 Z" fill="url(#' +
       shirtGrad +
       ')" filter="url(#soft-shadow)"/>' +
-      '<circle cx="32" cy="28" r="14" fill="url(#g-skin)"/>' +
-      '<circle cx="27" cy="27" r="2" fill="#3A2A18"/><circle cx="37" cy="27" r="2" fill="#3A2A18"/>' +
+      '<path d="M22 38 L22 52 M42 38 L42 52" stroke="rgba(0,0,0,.12)" stroke-width="3" stroke-linecap="round"/>' +
+      '<circle cx="32" cy="30" r="15" fill="url(#g-skin)" filter="url(#soft-shadow)"/>' +
+      hair +
+      '<circle cx="26" cy="30" r="2.4" fill="#2A1A10"/><circle cx="38" cy="30" r="2.4" fill="#2A1A10"/>' +
+      '<circle cx="27" cy="29" r=".9" fill="#FFF8F0" opacity=".8"/><circle cx="39" cy="29" r=".9" fill="#FFF8F0" opacity=".8"/>' +
       brow +
       mouth +
-      (mood === "happy" || mood === "rich"
-        ? '<circle cx="22" cy="34" r="2.2" fill="#E2556A" opacity=".45"/><circle cx="42" cy="34" r="2.2" fill="#E2556A" opacity=".45"/>'
-        : ""),
+      cheeks +
+      sparkle,
     "0 0 64 64",
     "art-char",
   );

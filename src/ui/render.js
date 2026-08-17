@@ -14,7 +14,7 @@ import {
   upgradeCost,
 } from "../systems/perks.js";
 import { axisLine } from "./juice.js";
-import { cityBg, icon, radar, seedArt } from "./art.js";
+import { cityBg, icon, logoMark, radar, seedArt } from "./art.js";
 import { listPlayableWorlds } from "../content/worlds/index.js";
 import { categoryVis, discoveryHints, lifeIdentity } from "./life-view.js";
 
@@ -36,42 +36,80 @@ function dots(total, current) {
   );
 }
 
-export function renderBoot(meta) {
+export function renderBoot(meta, preview = null, confirmNew = false) {
   const returning = (meta.lives ?? 0) > 0;
+  const hasSave = !!preview;
+
+  let actions = "";
+  if (confirmNew && hasSave) {
+    actions =
+      '<div class="continue-card is-warn">' +
+      '<p class="continue-kicker">Nueva partida</p>' +
+      '<p class="continue-copy">Esto deja atrás la vida de <strong>' +
+      esc(preview.name) +
+      "</strong>. No se puede deshacer.</p>" +
+      '<button type="button" class="btn btn-xl" data-act="new-game-yes">Empezar de cero</button>' +
+      '<button type="button" class="btn ghost" data-act="boot">Cancelar</button>' +
+      "</div>";
+  } else if (hasSave) {
+    actions =
+      '<div class="continue-card">' +
+      '<p class="continue-kicker">Partida en curso</p>' +
+      '<p class="continue-who">' +
+      esc(preview.name) +
+      " · " +
+      esc(preview.worldName) +
+      "</p>" +
+      '<p class="continue-meta">' +
+      esc(preview.age + " años") +
+      " · " +
+      esc(preview.stageLabel) +
+      "<br>" +
+      esc(preview.monthYear) +
+      "</p>" +
+      (preview.eventTitle
+        ? '<p class="continue-event">Ahora: ' + esc(preview.eventTitle) + "</p>"
+        : "") +
+      '<button type="button" class="btn btn-xl" data-act="continue">Continuar</button>' +
+      '<button type="button" class="btn ghost" data-act="new-game">Nueva partida</button>' +
+      "</div>";
+  } else {
+    actions =
+      '<button type="button" class="btn btn-xl" data-act="worlds">' +
+      esc(returning ? BOOT.ctaReturn : BOOT.cta) +
+      "</button>";
+  }
+
   return (
     '<section class="screen screen-hero fade-in">' +
     '<div class="hero-bg">' +
     cityBg() +
     '</div><div class="hero-shade"></div>' +
     '<div class="hero-content">' +
-    icon("crown") +
+    '<div class="hero-logo">' +
+    logoMark() +
+    '<div class="hero-brand"><span class="logo-vida">VIDA</span><span class="logo-sa">S.A.</span></div></div>' +
     '<p class="eyebrow">' +
     esc(BOOT.eyebrow) +
     "</p>" +
     "<h1>" +
-    esc(BOOT.title) +
+    esc(hasSave && !confirmNew ? "Tu vida sigue" : BOOT.title) +
     "</h1>" +
     '<p class="lead">' +
-    esc(BOOT.lead) +
+    esc(hasSave && !confirmNew ? "Puedes retomar esta vida o empezar otra." : BOOT.lead) +
     "</p>" +
-    (returning
+    (returning && !hasSave
       ? '<div class="hero-stats"><div class="hero-stat"><b>' +
         (meta.pv ?? 0) +
         '</b><span>puntos</span></div><div class="hero-stat"><b>' +
         (meta.lives ?? 0) +
         "</b><span>vidas</span></div></div>"
       : "") +
-    (meta.lastEpitaph
+    (meta.lastEpitaph && !hasSave
       ? '<p class="last-life">La última vez: <em>' + esc(meta.lastEpitaph) + "</em></p>"
       : "") +
-    '<button type="button" class="btn btn-xl" data-act="worlds">' +
-    esc(returning ? BOOT.ctaReturn : BOOT.cta) +
-    "</button>" +
+    actions +
     '<button type="button" class="link-btn" data-act="intro">¿Cómo se juega?</button>' +
-    '<div class="world-lock">' +
-    icon("globe") +
-    icon("lock") +
-    "<span>Mundo 2 · cerrado por ahora</span></div>" +
     '<p class="motto">' +
     esc(BOOT.motto) +
     "</p></div></section>"

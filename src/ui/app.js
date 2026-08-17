@@ -2,8 +2,9 @@ import { createGame, startMonth, resolveDecision, finishMonth, hudFromGame, even
 import { seedToGameConfig } from "../motor/adapter/legacy.js";
 import { SEEDS, getSeed } from "../content/seeds.js";
 import { emptyMeta, loadSave, saveAll } from "../systems/persist.js";
-import { character, moodFromTone } from "./art.js";
-import { formatMoney, juiceHero, juiceTone } from "./juice.js";
+import { hasActiveSession, sessionPreview, sessionPreviewFromSave } from "../systems/session.js";
+import { character, logoMark, moodFromTone } from "./art.js";
+import { formatMoney, juiceHero, juiceTone, juiceOutcomeEmoji, juiceKicker, deltaOutcomeEmoji } from "./juice.js";
 import { renderBoot, renderCreate, renderIntro, renderLife, renderSeeds, renderWorlds } from "./render.js";
 import {
   renderBottomNav,
@@ -36,6 +37,8 @@ const state = {
   selectedStoryId: null,
   busy: false,
   unlockQueue: [],
+  savePreview: null,
+  confirmNew: false,
 };
 
 const CORP = {
@@ -46,7 +49,7 @@ const CORP = {
   life: "En curso",
   stories: "Historias",
   collection: "Colección",
-  missions: "Misiones",
+  menu: "Menú",
 };
 
 function wait(ms) {
@@ -61,35 +64,83 @@ function boot() {
   try {
     const saved = loadSave();
     state.meta = saved.meta;
-    const motor = saved.session?.motorGame;
-    if (motor?.pendingEvent && motor.phase === "awaiting_decision") {
-      state.game = motor;
-      state.view = { event: eventForUI(motor.pendingEvent) };
-      state.screen = "life";
-      state.tab = saved.session?.tab ?? "life";
-    } else if (motor && motor.player) {
-      state.game = motor;
-      state.screen = saved.session?.screen ?? "life";
-      state.tab = saved.session?.tab ?? "life";
-      if (motor.pendingEvent) {
-        state.view = { event: eventForUI(motor.pendingEvent) };
-      }
-    } else {
-      state.screen = "boot";
-    }
+    state.savePreview = sessionPreviewFromSave(saved.session);
+    state.confirmNew = false;
+    state.screen = "boot";
+    state.game = null;
+    state.view = null;
+    state.tab = "life";
   } catch {
     state.screen = "boot";
     state.game = null;
+    state.savePreview = null;
   }
   render();
 }
 
 function persist() {
-  const session =
-    state.game && isInGame()
-      ? { motorGame: state.game, tab: state.tab, screen: state.screen }
-      : null;
-  saveAll(state.meta, session);
+  if (!state.game) return;
+  const { catalog, ...motorGame } = state.game;
+  saveAll(state.meta, { motorGame, tab: state.tab, screen: state.screen });
+  state.savePreview = sessionPreview(motorGame);
+}
+
+function goToMenu() {
+  if (state.game) persist();
+  hideJuice();
+  hideUnlock();
+  state.unlockQueue = [];
+  state.confirmNew = false;
+  state.savePreview = state.game ? sessionPreview(state.game) : state.savePreview;
+  state.game = null;
+  state.view = null;
+  state.tab = "life";
+  state.screen = "boot";
+  render();
+}
+
+function continueLife() {
+  const saved = loadSave();
+  const motor = saved.session?.motorGame;
+  if (!hasActiveSession(saved.session)) return;
+  let game = motor;
+  try {
+    if (game.phase === "showing_result") {
+      game = startMonth(finishMonth(game));
+    } else if (!game.pendingEvent) {
+      game = startMonth(game);
+    }
+  } catch (err) {
+    console.error(err);
+    state.confirmNew = false;
+    state.savePreview = sessionPreviewFromSave(saved.session);
+    state.screen = "boot";
+    return render();
+  }
+  state.game = game;
+  state.view = { event: eventForUI(game.pendingEvent) };
+  state.screen = "life";
+  state.tab = saved.session?.tab === "life" || !saved.session?.tab ? "life" : saved.session.tab;
+  if (state.tab !== "life") state.screen = state.tab;
+  state.confirmNew = false;
+  persist();
+  render();
+}
+
+function startNewGameFlow(force = false) {
+  if (state.savePreview && !force) {
+    state.confirmNew = true;
+    state.screen = "boot";
+    return render();
+  }
+  saveAll(state.meta, null);
+  state.savePreview = null;
+  state.confirmNew = false;
+  state.game = null;
+  state.view = null;
+  state.selectedWorld = null;
+  state.screen = "worlds";
+  render();
 }
 
 function paintWorld() {
@@ -185,7 +236,7 @@ function showJuiceMotor(result, nextMonthLabel, currentLabel) {
   const card = juice.querySelector(".juice-card");
   card.className = "overlay-card juice-card is-" + tone;
   const kicker = document.getElementById("juice-kicker");
-  if (kicker) kicker.textContent = "Decisión tomada";
+  if (kicker) kicker.textContent = juiceOutcomeEmoji(tone) + " " + juiceKicker(tone);
   const years = currentLabel && nextMonthLabel && currentLabel !== nextMonthLabel
     ? currentLabel + " → " + nextMonthLabel
     : nextMonthLabel
@@ -193,7 +244,7 @@ function showJuiceMotor(result, nextMonthLabel, currentLabel) {
       : "";
   document.getElementById("juice-years").textContent = years;
   document.getElementById("juice-char").innerHTML = character(moodFromTone(tone));
-  document.getElementById("juice-hero").textContent = hero.text;
+  document.getElementById("juice-hero").textContent = juiceOutcomeEmoji(tone) + " " + hero.text;
   document.getElementById("juice-line").textContent = result.text ?? "Decidiste.";
   document.getElementById("juice-deltas").innerHTML = (result.deltas ?? [])
     .map((d) => {
@@ -208,7 +259,9 @@ function showJuiceMotor(result, nextMonthLabel, currentLabel) {
         meta.emoji +
         "</span>" +
         meta.label +
-        '</span><span>' +
+        '</span><span class="delta-val">' +
+        deltaOutcomeEmoji(cls === "up") +
+        " " +
         val +
         "</span></div>"
       );
@@ -284,7 +337,7 @@ function render() {
     document.getElementById("corp-meta").textContent = CORP[state.screen] ?? CORP[state.tab] ?? "VIDA S.A.";
 
     if (state.screen === "boot") {
-      stageEl.innerHTML = renderBoot(state.meta);
+      stageEl.innerHTML = renderBoot(state.meta, state.savePreview, state.confirmNew);
       return;
     }
     if (state.screen === "intro") {
@@ -306,7 +359,7 @@ function render() {
     if (state.screen === "life") {
       if (!state.view?.event) {
         state.screen = "boot";
-        stageEl.innerHTML = renderBoot(state.meta);
+        stageEl.innerHTML = renderBoot(state.meta, state.savePreview, state.confirmNew);
         return;
       }
       stageEl.innerHTML = renderLife(state.game, state.view);
@@ -365,12 +418,22 @@ stageEl.addEventListener("click", async (e) => {
     state.screen = "worlds";
     return render();
   }
-  if (act === "boot") {
-    state.screen = "boot";
-    state.game = null;
-    state.tab = "life";
-    persist();
-    return render();
+  if (act === "menu" || act === "boot") {
+    state.confirmNew = false;
+    goToMenu();
+    return;
+  }
+  if (act === "continue") {
+    continueLife();
+    return;
+  }
+  if (act === "new-game") {
+    startNewGameFlow(false);
+    return;
+  }
+  if (act === "new-game-yes") {
+    startNewGameFlow(true);
+    return;
   }
   if (act === "world") {
     state.selectedWorld = btn.getAttribute("data-id");
@@ -421,16 +484,37 @@ bottomNav?.addEventListener("click", (e) => {
   switchTab(btn.getAttribute("data-tab"));
 });
 
+topbar?.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-act]");
+  if (!btn || state.busy) return;
+  const act = btn.getAttribute("data-act");
+  if (act === "menu" && isInGame()) goToMenu();
+});
+
+function advanceAfterResult() {
+  if (!state.game || state.game.phase !== "showing_result") return;
+  try {
+    state.game = startMonth(finishMonth(state.game));
+    state.view = { event: eventForUI(state.game.pendingEvent) };
+    state._nextMonthLabel = null;
+    playFx(FX.MONTH);
+    persist();
+    render();
+  } catch (err) {
+    console.error(err);
+    state.busy = false;
+    hideJuice();
+    hideUnlock();
+    persist();
+    render();
+  }
+}
+
 document.getElementById("juice-ok").addEventListener("click", () => {
   hideJuice();
   if (!state.game || state.game.phase !== "showing_result") return;
   if (showNextUnlock()) return;
-  state.game = startMonth(finishMonth(state.game));
-  state.view = { event: eventForUI(state.game.pendingEvent) };
-  state._nextMonthLabel = null;
-  playFx(FX.MONTH);
-  persist();
-  render();
+  advanceAfterResult();
 });
 
 document.getElementById("unlock-ok")?.addEventListener("click", () => {
@@ -440,11 +524,11 @@ document.getElementById("unlock-ok")?.addEventListener("click", () => {
     return;
   }
   if (state.game?.phase === "showing_result" && !juice.classList.contains("is-on")) {
-    state.game = startMonth(finishMonth(state.game));
-    state.view = { event: eventForUI(state.game.pendingEvent) };
-    persist();
-    render();
+    advanceAfterResult();
   }
 });
 
 boot();
+
+const logoEl = document.getElementById("logo-mark");
+if (logoEl) logoEl.innerHTML = logoMark();

@@ -19,24 +19,22 @@ export function renderBottomNav(tab) {
     { id: "collection", label: "Colección", icon: "🏆" },
     { id: "missions", label: "Misiones", icon: "🎯" },
   ];
-  return (
-    '<nav class="bottom-nav" aria-label="Navegación principal">' +
-    tabs
-      .map(
-        (t) =>
-          '<button type="button" class="nav-tab' +
-          (tab === t.id ? " is-on" : "") +
-          '" data-act="tab" data-tab="' +
-          t.id +
-          '"><span class="nav-icon">' +
-          t.icon +
-          '</span><span class="nav-label">' +
-          esc(t.label) +
-          "</span></button>",
-      )
-      .join("") +
-    "</nav>"
-  );
+  return tabs
+    .map(
+      (t) =>
+        '<button type="button" class="nav-tab' +
+        (tab === t.id ? " is-on" : "") +
+        '" data-act="tab" data-tab="' +
+        t.id +
+        '" aria-current="' +
+        (tab === t.id ? "page" : "false") +
+        '"><span class="nav-icon" aria-hidden="true">' +
+        t.icon +
+        '</span><span class="nav-label">' +
+        esc(t.label) +
+        "</span></button>",
+    )
+    .join("");
 }
 
 export function renderStories(game, selectedStoryId = null) {
