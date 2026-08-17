@@ -1,0 +1,377 @@
+import { EVENT_TYPES } from "../../../motor/constants.js";
+
+const ev = (spec) => ({ eventType: EVENT_TYPES.LIFE, weight: 1, cooldown: 5, worldId: "clasico", ...spec });
+
+export const CLASSIC_EVENTS = [
+  // —— INFANCIA ——
+  ev({
+    id: "c_inf_familia_cena",
+    stage: "infancia",
+    category: "familia",
+    title: "La cena familiar",
+    description: "En la mesa todos hablan a la vez. Te piden que cuentes cómo te fue en la escuela.",
+    options: [
+      { id: "hablar", text: "Contar todo con entusiasmo", effects: { happiness: 5, influence: 2 } },
+      { id: "callar", text: "Quedarte callado", effects: { happiness: -2, influence: -1 } },
+    ],
+  }),
+  ev({
+    id: "c_inf_escuela_amigo",
+    stage: "infancia",
+    category: "social",
+    title: "El nuevo de la clase",
+    description: "Un niño nuevo no tiene con quién jugar en el recreo.",
+    options: [
+      { id: "invitar", text: "Invitarlo a jugar", effects: { happiness: 6, influence: 3 } },
+      { id: "ignorar", text: "Seguir con tus amigos", effects: { happiness: 1, evil: 1 } },
+    ],
+  }),
+  ev({
+    id: "c_inf_ocio_patio",
+    stage: "infancia",
+    category: "ocio",
+    title: "El partido del recreo",
+    description: "Te eligen capitán. Puedes incluir a todos o jugar solo con los mejores.",
+    options: [
+      { id: "todos", text: "Que jueguen todos", effects: { happiness: 4, influence: 4 } },
+      { id: "ganar", text: "Solo los que corren más", effects: { influence: 2, happiness: -2, evil: 1 } },
+    ],
+  }),
+  ev({
+    id: "c_inf_musica",
+    stage: "infancia",
+    category: "historias",
+    eventType: EVENT_TYPES.STORY,
+    storyId: "cantante",
+    chapterId: "interes_musica",
+    title: "La clase de música",
+    description: "En la escuela ofrecen clases extras de música. Cuesta dinero y tiempo de juego.",
+    options: [
+      {
+        id: "si",
+        text: "Pedir clases",
+        effects: { money: -40, happiness: 6 },
+        storyProgress: { storyId: "cantante", chapterId: "interes_musica", flag: "clases_musica" },
+      },
+      { id: "no", text: "Prefiero jugar afuera", effects: { happiness: 3 } },
+    ],
+  }),
+  ev({
+    id: "c_inf_futbol",
+    stage: "infancia",
+    category: "historias",
+    eventType: EVENT_TYPES.STORY,
+    storyId: "futbolista",
+    chapterId: "primer_balón",
+    title: "El balón nuevo",
+    description: "En el parque hay un grupo jugando fútbol. Te miran como diciendo «¿te unes?».",
+    options: [
+      {
+        id: "jugar",
+        text: "Unirte al partido",
+        effects: { health: 4, happiness: 5 },
+        storyProgress: { storyId: "futbolista", chapterId: "primer_balón", flag: "futbol_nino" },
+      },
+      { id: "ver", text: "Solo mirar", effects: { happiness: -1 } },
+    ],
+  }),
+
+  // —— ADOLESCENCIA ——
+  ev({
+    id: "c_ado_estudio_fiesta",
+    stage: "adolescencia",
+    category: "estudios",
+    title: "Fiesta o examen",
+    description: "Te invitan a una fiesta la noche antes del examen más difícil del trimestre.",
+    options: [
+      { id: "fiesta", text: "Ir a la fiesta", effects: { happiness: 8, health: -3, influence: 4 } },
+      { id: "estudiar", text: "Quedarte estudiando", effects: { happiness: -3, influence: 5 } },
+    ],
+  }),
+  ev({
+    id: "c_ado_trabajo_verano",
+    stage: "adolescencia",
+    category: "trabajo",
+    title: "Trabajo de verano",
+    description: "Una tienda del barrio busca ayudante. Paga poco pero es tu primer sueldo.",
+    options: [
+      { id: "tomar", text: "Aceptar el trabajo", effects: { money: 80, happiness: -2, influence: 2 }, unlock: { careerId: "ayudante" } },
+      { id: "rechazar", text: "Disfrutar el verano", effects: { happiness: 6, money: -20 } },
+    ],
+  }),
+  ev({
+    id: "c_ado_romance_nota",
+    stage: "adolescencia",
+    category: "relaciones",
+    title: "La nota anónima",
+    description: "Alguien dejó una nota en tu casillero. No sabes quién es.",
+    options: [
+      { id: "buscar", text: "Investigar quién fue", effects: { happiness: 5, influence: 2 } },
+      { id: "ignorar", text: "Ignorarla", effects: { happiness: -1 } },
+    ],
+  }),
+  ev({
+    id: "c_ado_moral_cartera",
+    stage: "adolescencia",
+    category: "dinero",
+    title: "La cartera encontrada",
+    description: "Encuentras una cartera con dinero en el pasillo del colegio.",
+    options: [
+      { id: "devolver", text: "Devolverla", effects: { influence: 8, happiness: 4, evil: -2 } },
+      { id: "quedarte", text: "Quedarte el dinero", effects: { money: 60, evil: 8, influence: -5 } },
+    ],
+  }),
+  ev({
+    id: "c_ado_escritor_diario",
+    stage: "adolescencia",
+    category: "historias",
+    eventType: EVENT_TYPES.STORY,
+    storyId: "escritor",
+    chapterId: "primer_diario",
+    title: "El cuaderno secreto",
+    description: "Empiezas a escribir tus pensamientos en un cuaderno. Alguien podría leerlo.",
+    options: [
+      {
+        id: "escribir",
+        text: "Seguir escribiendo cada noche",
+        effects: { happiness: 5 },
+        storyProgress: { storyId: "escritor", chapterId: "primer_diario", flag: "escribe_diario" },
+      },
+      { id: "parar", text: "Dejarlo por vergüenza", effects: { happiness: -2 } },
+    ],
+  }),
+
+  // —— UNIVERSIDAD ——
+  ev({
+    id: "c_uni_estudio_beca",
+    stage: "universidad",
+    category: "estudios",
+    title: "La beca complicada",
+    description: "Puedes postular a una beca exigente o trabajar medio tiempo.",
+    options: [
+      { id: "beca", text: "Ir por la beca", effects: { happiness: -4, influence: 8, money: 50 } },
+      { id: "trabajo", text: "Trabajar ya", effects: { money: 120, happiness: -2, health: -3 } },
+    ],
+  }),
+  ev({
+    id: "c_uni_cantante_juegos",
+    stage: "universidad",
+    category: "historias",
+    eventType: EVENT_TYPES.STORY,
+    storyId: "cantante",
+    chapterId: "juegos_uni",
+    requirements: { flags: ["clases_musica"] },
+    title: "Los juegos universitarios",
+    description: "Te invitan a cantar en los juegos de la universidad. El escenario es pequeño pero real.",
+    options: [
+      {
+        id: "cantar",
+        text: "Subir al escenario",
+        effects: { happiness: 10, influence: 6 },
+        storyProgress: { storyId: "cantante", chapterId: "juegos_uni" },
+        nextEvent: "c_uni_cantante_productor",
+      },
+      { id: "no", text: "Rechazar", effects: { happiness: -3 } },
+    ],
+  }),
+  ev({
+    id: "c_uni_cantante_productor",
+    stage: "universidad",
+    category: "historias",
+    eventType: EVENT_TYPES.STORY,
+    storyId: "cantante",
+    chapterId: "productor",
+    requirements: { flags: ["clases_musica"] },
+    title: "El productor",
+    description: "Un productor te escuchó cantar. Quiere una demo. Cuesta tiempo y un poco de dinero.",
+    options: [
+      {
+        id: "demo",
+        text: "Grabar la demo",
+        effects: { money: -80, influence: 10 },
+        storyProgress: { storyId: "cantante", chapterId: "productor" },
+        nextEvent: "c_adu_cantante_primer_show",
+      },
+      { id: "no", text: "No estoy listo", effects: { happiness: -4 } },
+    ],
+  }),
+  ev({
+    id: "c_uni_relacion_inicio",
+    stage: "universidad",
+    category: "relaciones",
+    title: "Café después de clase",
+    description: "Alguien te invita a tomar un café. Podría ser el inicio de algo.",
+    options: [
+      {
+        id: "si",
+        text: "Ir al café",
+        effects: { happiness: 8, money: -15 },
+        unlock: { partner: true },
+      },
+      { id: "no", text: "Tienes que estudiar", effects: { influence: 3, happiness: -2 } },
+    ],
+  }),
+  ev({
+    id: "c_uni_emprendedor_idea",
+    stage: "universidad",
+    category: "historias",
+    eventType: EVENT_TYPES.STORY,
+    storyId: "emprendedor",
+    chapterId: "idea",
+    title: "La idea en una servilleta",
+    description: "En la cafetería dibujas una idea de negocio. Un amigo dice que podría funcionar.",
+    options: [
+      {
+        id: "seguir",
+        text: "Desarrollar la idea",
+        effects: { money: -50, influence: 4 },
+        storyProgress: { storyId: "emprendedor", chapterId: "idea", flag: "tiene_idea" },
+      },
+      { id: "olvidar", text: "Olvidarla", effects: { happiness: 1 } },
+    ],
+  }),
+
+  // —— ADULTEZ ——
+  ev({
+    id: "c_adu_trabajo_extra",
+    stage: "adultez",
+    category: "trabajo",
+    title: "Horas extra",
+    description: "Tu jefe te ofrece trabajar horas extra este mes.",
+    options: [
+      { id: "si", text: "Aceptar", effects: { money: 150, happiness: -6, health: -4 } },
+      { id: "no", text: "Rechazar", effects: { happiness: 5 } },
+    ],
+  }),
+  ev({
+    id: "c_adu_dinero_prestamo",
+    stage: "adultez",
+    category: "dinero",
+    title: "Tu amigo necesita dinero",
+    description: "Un amigo cercano te pide prestado una suma importante.",
+    options: [
+      { id: "prestar", text: "Prestarle", effects: { money: -100, happiness: 3, influence: 4 } },
+      { id: "negar", text: "Negarte", effects: { money: 0, happiness: -4, evil: 2 } },
+    ],
+  }),
+  ev({
+    id: "c_adu_salud_checkup",
+    stage: "adultez",
+    category: "salud",
+    title: "El chequeo anual",
+    description: "Llevas meses posponiendo un chequeo médico. Cuesta dinero pero podría evitar problemas.",
+    options: [
+      { id: "ir", text: "Ir al médico", effects: { money: -60, health: 10 } },
+      { id: "posponer", text: "Posponer otra vez", effects: { health: -6, money: 20 } },
+    ],
+  }),
+  ev({
+    id: "c_adu_cantante_primer_show",
+    stage: "adultez",
+    category: "historias",
+    eventType: EVENT_TYPES.STORY,
+    storyId: "cantante",
+    chapterId: "primer_show",
+    requirements: { flags: ["clases_musica"] },
+    title: "Tu primer show pagado",
+    description: "Te ofrecen cantar en un bar pequeño. Pagan poco pero es tu primer trabajo artístico.",
+    options: [
+      {
+        id: "show",
+        text: "Aceptar el show",
+        effects: { money: 200, happiness: 12, influence: 8 },
+        storyProgress: { storyId: "cantante", chapterId: "primer_show", completed: false },
+        unlock: { careerId: "cantante", careerTitle: "Artista" },
+      },
+      { id: "no", text: "No es el momento", effects: { happiness: -5 } },
+    ],
+  }),
+  ev({
+    id: "c_adu_actor_casting",
+    stage: "adultez",
+    category: "historias",
+    eventType: EVENT_TYPES.STORY,
+    storyId: "actor",
+    chapterId: "casting",
+    title: "El casting",
+    description: "Ves un casting para un comercial local. No pagará mucho pero te ven miles.",
+    options: [
+      {
+        id: "ir",
+        text: "Ir al casting",
+        effects: { happiness: 5, influence: 6, money: -20 },
+        storyProgress: { storyId: "actor", chapterId: "casting", flag: "actor_casting" },
+      },
+      { id: "no", text: "No es para ti", effects: {} },
+    ],
+  }),
+  ev({
+    id: "c_adu_futbol_prueba",
+    stage: "adultez",
+    category: "historias",
+    eventType: EVENT_TYPES.STORY,
+    storyId: "futbolista",
+    chapterId: "prueba",
+    requirements: { flags: ["futbol_nino"] },
+    title: "La prueba semiprofesional",
+    description: "Un club local abre pruebas. Es ahora o nunca.",
+    options: [
+      {
+        id: "ir",
+        text: "Presentarte",
+        effects: { health: -5, happiness: 10, influence: 10 },
+        unlock: { careerId: "futbolista", careerTitle: "Futbolista semipro" },
+        storyProgress: { storyId: "futbolista", chapterId: "prueba" },
+      },
+      { id: "no", text: "Quedarte en tu trabajo", effects: { happiness: -3 } },
+    ],
+  }),
+  ev({
+    id: "c_adu_pareja_viaje",
+    stage: "adultez",
+    category: "relaciones",
+    requirements: { hasPartner: true },
+    title: "El viaje sorpresa",
+    description: "Tu pareja propone un viaje que no estaba en el presupuesto.",
+    options: [
+      { id: "si", text: "Ir de viaje", effects: { money: -200, happiness: 12 } },
+      { id: "no", text: "Ahorrar este mes", effects: { money: 50, happiness: -6 } },
+    ],
+  }),
+  ev({
+    id: "c_adu_maldad_atajo",
+    stage: "adultez",
+    category: "eventos",
+    requirements: { evilMin: 15 },
+    title: "El atajo sucio",
+    description: "Conoces una forma rápida de ganar dinero. No es exactamente legal.",
+    options: [
+      { id: "si", text: "Tomar el atajo", effects: { money: 300, evil: 10, influence: -5 } },
+      { id: "no", text: "Mantener el rumbo", effects: { evil: -3, influence: 3 } },
+    ],
+  }),
+
+  // —— MADUREZ ——
+  ev({
+    id: "c_mad_salud_rutina",
+    stage: "madurez",
+    category: "salud",
+    title: "La rutina del médico",
+    description: "El médico insiste en caminar todos los días. Suena aburrido pero funciona.",
+    options: [
+      { id: "caminar", text: "Caminar cada mañana", effects: { health: 8, happiness: 3 } },
+      { id: "ignorar", text: "Seguir como estás", effects: { health: -5 } },
+    ],
+  }),
+  ev({
+    id: "c_mad_familia_nietos",
+    stage: "madurez",
+    category: "familia",
+    title: "Visita familiar",
+    description: "Te invitan a una reunión grande. Hay niños, comida y opiniones.",
+    options: [
+      { id: "ir", text: "Ir y participar", effects: { happiness: 10, health: -2 } },
+      { id: "faltar", text: "Inventar excusa", effects: { happiness: -4, influence: -2 } },
+    ],
+  }),
+];

@@ -16,6 +16,8 @@ import {
 } from "../systems/perks.js";
 import { axisLine } from "./juice.js";
 import { cityBg, icon, radar, seedArt } from "./art.js";
+import { listPlayableWorlds } from "../content/worlds/index.js";
+import { STAGE_LABELS as MOTOR_STAGES } from "../motor/constants.js";
 
 function esc(s) {
   return String(s ?? "")
@@ -63,7 +65,7 @@ export function renderBoot(meta) {
     (meta.lastEpitaph
       ? '<p class="last-life">La última vez: <em>' + esc(meta.lastEpitaph) + "</em></p>"
       : "") +
-    '<button type="button" class="btn btn-xl" data-act="seeds">' +
+    '<button type="button" class="btn btn-xl" data-act="worlds">' +
     esc(returning ? BOOT.ctaReturn : BOOT.cta) +
     "</button>" +
     '<button type="button" class="link-btn" data-act="intro">¿Cómo se juega?</button>' +
@@ -199,7 +201,8 @@ function renderPerkSlot(meta) {
 
 export function renderLife(run, view) {
   const ev = view.event;
-  const stage = STAGE_LABELS[ev.stage] ?? ev.stage;
+  const stage = STAGE_LABELS[ev.stage] ?? MOTOR_STAGES[ev.stage] ?? ev.stage;
+  const body = ev.body ?? ev.description ?? "";
   const tones = ["choice-a", "choice-b", "choice-c"];
   return (
     '<section class="screen screen-life fade-in">' +
@@ -209,7 +212,7 @@ export function renderLife(run, view) {
     '<article class="event-card"><h2>' +
     esc(ev.title) +
     '</h2><p class="card-body">' +
-    esc(ev.body) +
+    esc(body) +
     "</p></article>" +
     '<div class="choices">' +
     ev.options
@@ -291,5 +294,49 @@ export function renderPost(view, meta, beat, collapsed) {
       ? '<button type="button" class="btn btn-xl" data-act="again">Nueva vida</button><button type="button" class="btn ghost" data-act="boot">Inicio</button>'
       : '<button type="button" class="btn" data-act="beat">Continuar</button>') +
     "</section>"
+  );
+}
+
+export function renderWorlds() {
+  const worlds = listPlayableWorlds();
+  return (
+    '<section class="screen fade-in">' +
+    '<p class="eyebrow">Elige tu mundo</p>' +
+    "<h2>¿Qué vida quieres vivir?</h2>" +
+    '<p class="lead">Cada mundo tiene sus propias decisiones y historias.</p>' +
+    '<div class="seed-grid">' +
+    worlds
+      .map(
+        (w) =>
+          '<button type="button" class="seed-card" data-act="world" data-id="' +
+          w.id +
+          '"><div class="seed-head"><span class="seed-emoji">' +
+          icon(w.id === "capitalismo" ? "crown" : "globe", "art-seed") +
+          '</span><div><span class="seed-title">' +
+          esc(w.name) +
+          '</span><span class="seed-tension">' +
+          esc(w.id === "capitalismo" ? "Sátira · dinero · estatus" : "Vida cotidiana") +
+          "</span></div></div><p class=\"seed-body\">" +
+          esc(w.description) +
+          '</p><span class="seed-cta">Jugar →</span></button>',
+      )
+      .join("") +
+    '</div><button type="button" class="link-btn" data-act="boot">Volver</button></section>'
+  );
+}
+
+export function renderCreate(worldId, name = "Tú") {
+  return (
+    '<section class="screen fade-in">' +
+    '<p class="eyebrow">Tu personaje</p>' +
+    "<h2>¿Cómo te llamas?</h2>" +
+    '<p class="lead">Un nombre para esta vida.</p>' +
+    '<input type="text" class="name-input" id="player-name" maxlength="24" value="' +
+    esc(name) +
+    '" placeholder="Tu nombre" />' +
+    '<button type="button" class="btn btn-xl" data-act="start-game" data-world="' +
+    esc(worldId) +
+    '">Comenzar en enero</button>' +
+    '<button type="button" class="link-btn" data-act="worlds">Cambiar mundo</button></section>'
   );
 }

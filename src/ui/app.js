@@ -1,15 +1,14 @@
-import { choose, hudOf, startLife } from "../engine/play.js";
-import { yearsLine } from "../content/present.js";
-import { getPerk } from "../content/perks.js";
-import { emptyMeta, loadSave, rememberLife, saveAll } from "../systems/persist.js";
-import { equipPerk, perkTier, tierLabel, upgradePerk } from "../systems/perks.js";
+import { createGame, startMonth, resolveDecision, finishMonth, hudFromGame, eventForUI } from "../motor/loop.js";
+import { seedToGameConfig } from "../motor/adapter/legacy.js";
+import { SEEDS, getSeed } from "../content/seeds.js";
+import { emptyMeta, loadSave, saveAll } from "../systems/persist.js";
 import { carArt, character, houseArt, icon, moodFromTone } from "./art.js";
-import { formatMoney, juiceDeltas, juiceHero, juiceTone, snap } from "./juice.js";
-import { renderBoot, renderIntro, renderLife, renderPost, renderSeeds } from "./render.js";
+import { formatMoney, juiceHero, juiceTone } from "./juice.js";
+import { renderBoot, renderCreate, renderIntro, renderLife, renderSeeds, renderWorlds } from "./render.js";
+import { STAGE_LABELS } from "../motor/constants.js";
 
 const stageEl = document.getElementById("stage");
 const hud = document.getElementById("hud");
-const reveal = document.getElementById("reveal");
 const juice = document.getElementById("juice");
 const topbar = document.getElementById("topbar");
 const fineprint = document.getElementById("fineprint");
@@ -17,20 +16,19 @@ const fineprint = document.getElementById("fineprint");
 const state = {
   screen: "boot",
   introBeat: 0,
-  run: null,
+  game: null,
   view: null,
-  beat: 0,
   meta: emptyMeta(),
+  selectedWorld: null,
   busy: false,
-  pending: null,
 };
 
 const CORP = {
   boot: "Tu vida",
-  intro: "Así se juega",
+  worlds: "Mundos",
+  create: "Personaje",
   seed: "Tu origen",
   life: "En curso",
-  post: "El final",
 };
 
 function wait(ms) {
@@ -41,26 +39,24 @@ function boot() {
   try {
     const saved = loadSave();
     state.meta = saved.meta;
-    const run = saved.session?.run;
-    const view = saved.session?.view;
-    if (run && !run.ended && view?.event) {
-      state.run = run;
-      state.view = view;
+    const motor = saved.session?.motorGame;
+    if (motor?.pendingEvent && motor.phase === "awaiting_decision") {
+      state.game = motor;
+      state.view = { event: eventForUI(motor.pendingEvent) };
       state.screen = "life";
     } else {
       state.screen = "boot";
-      state.introBeat = 0;
     }
   } catch {
     state.screen = "boot";
-    state.run = null;
-    state.view = null;
+    state.game = null;
   }
   render();
 }
 
 function persist() {
-  saveAll(state.meta, state.run && !state.run.ended ? { run: state.run, view: state.view } : null);
+  const session = state.game && state.screen === "life" ? { motorGame: state.game } : null;
+  saveAll(state.meta, session);
 }
 
 function setIcon(id, name, on = true) {
@@ -71,122 +67,83 @@ function setIcon(id, name, on = true) {
 }
 
 function paintHud() {
-  const show = !!state.run && (state.screen === "life" || juice.classList.contains("is-on"));
+  const show = state.screen === "life" || juice.classList.contains("is-on");
   hud.hidden = !show;
-  if (!show) return;
-  const h = hudOf(state.run);
+  if (!show || !state.game) return;
+  const h = hudFromGame(state.game);
   document.getElementById("hud-avatar").innerHTML = character("idle");
-  document.getElementById("hud-age").textContent = h.age + " años";
-  document.getElementById("hud-job").textContent = h.job;
+  document.getElementById("hud-date").textContent = h.monthYear;
+  document.getElementById("hud-age").textContent = h.age + " años · " + (STAGE_LABELS[h.stage] ?? h.stage);
+  document.getElementById("hud-job").textContent = h.job ?? (h.partner ? "En pareja" : "—");
   const cash = document.getElementById("hud-money");
-  cash.textContent = formatMoney(h.money);
-  cash.classList.toggle("is-neg", h.money < 0);
-  document.getElementById("hap-vital").innerHTML = icon("hap") + "<b>" + h.happiness + "</b>";
-  document.getElementById("hp-vital").innerHTML = icon("hp") + "<b>" + h.health + "</b>";
-  document.getElementById("home-ico").innerHTML = houseArt(h.home, "");
-  document.getElementById("car-ico").innerHTML = carArt(h.car, "");
-  setIcon("study-ico", "study", state.run.flags?.includes("estudio"));
-  setIcon("fam-ico", "family", !!h.partner);
+  cash.textContent = formatMoney(h.dinero);
+  cash.classList.toggle("is-neg", h.dinero < 0);
+  document.getElementById("hp-vital").innerHTML = icon("hp") + "<b>" + h.salud + "</b>";
+  document.getElementById("hap-vital").innerHTML = icon("hap") + "<b>" + h.felicidad + "</b>";
+  document.getElementById("inf-vital").innerHTML = icon("spark") + "<b>" + h.influencia + "</b>";
+  document.getElementById("evil-vital").innerHTML = icon("lock") + "<b>" + h.maldad + "</b>";
+  const p = state.game.player;
+  document.getElementById("home-ico").innerHTML = houseArt(p.home ?? 0, "");
+  document.getElementById("car-ico").innerHTML = carArt(p.car ?? 0, "");
+  setIcon("study-ico", "study", p.flags?.includes("estudio"));
+  setIcon("fam-ico", "family", h.partner);
 }
 
-function paintPerkChip() {
-  const chip = document.getElementById("perk-chip");
-  const eq = state.run?.equippedPerk;
-  if (!eq || state.screen !== "life") {
-    chip.hidden = true;
-    return;
-  }
-  const perk = getPerk(eq.id);
-  chip.hidden = false;
-  chip.textContent = (perk?.name ?? "Extra") + " · " + tierLabel(eq.tier);
-}
-
-function equippedForLife() {
-  const id = state.meta.equippedPerk;
-  if (!id) return null;
-  const tier = perkTier(state.meta, id);
-  return tier < 1 ? null : { id, tier };
-}
-
-function showJuice(pack, before, years, deferred) {
-  const deltas = juiceDeltas(before, pack.run);
+function showJuiceMotor(result, nextMonthLabel) {
+  const deltas = (result.deltas ?? []).map((d) => ({
+    key: d.key,
+    art: d.key === "dinero" ? "money" : d.key === "felicidad" ? "hap" : d.key === "salud" ? "hp" : "spark",
+    label: d.key,
+    delta: d.delta,
+    good: d.key === "maldad" ? d.delta < 0 : d.delta > 0,
+    money: d.key === "dinero",
+  }));
   const hero = juiceHero(deltas);
   const tone = juiceTone(deltas);
   const card = juice.querySelector(".juice-card");
   card.className = "overlay-card juice-card is-" + tone;
-  document.getElementById("juice-years").textContent = yearsLine(years);
-  document.getElementById("juice-char").innerHTML = character(
-    hero.art === "money" && tone === "gain" ? "rich" : moodFromTone(tone),
-  );
+  document.getElementById("juice-years").textContent = nextMonthLabel ? "Siguiente: " + nextMonthLabel : "";
+  document.getElementById("juice-char").innerHTML = character(moodFromTone(tone));
   document.getElementById("juice-hero").textContent = hero.text;
-  document.getElementById("juice-line").textContent = pack.view.punchline || "Tu vida cambió.";
-  document.getElementById("juice-deltas").innerHTML = deltas
-    .slice(0, 4)
+  document.getElementById("juice-line").textContent = result.text ?? "Decidiste.";
+  document.getElementById("juice-deltas").innerHTML = (result.deltas ?? [])
     .map((d) => {
-      const cls = d.good ? "up" : "down";
-      if (d.text) {
-        return (
-          '<div class="delta"><span class="delta-left">' +
-          icon(d.art) +
-          d.label +
-          "</span><span>" +
-          d.text +
-          "</span></div>"
-        );
-      }
-      const from = d.money ? formatMoney(d.from) : d.from;
-      const to = d.money ? formatMoney(d.to) : d.to;
+      const cls = d.key === "maldad" ? (d.delta > 0 ? "down" : "up") : d.delta > 0 ? "up" : "down";
+      const label =
+        d.key === "salud"
+          ? "Salud"
+          : d.key === "felicidad"
+            ? "Felicidad"
+            : d.key === "dinero"
+              ? "Dinero"
+              : d.key === "influencia"
+                ? "Influencia"
+                : "Maldad";
+      const val = d.key === "dinero" ? (d.delta > 0 ? "+" : "") + formatMoney(d.delta) : (d.delta > 0 ? "+" : "") + d.delta;
       return (
         '<div class="delta ' +
         cls +
         '"><span class="delta-left">' +
-        icon(d.art) +
-        d.label +
-        "</span><span>" +
-        from +
-        " → " +
-        to +
+        icon(d.key === "dinero" ? "money" : d.key === "felicidad" ? "hap" : d.key === "salud" ? "hp" : "spark") +
+        label +
+        '</span><span>' +
+        val +
         "</span></div>"
       );
     })
     .join("");
-  const hook = document.getElementById("juice-hook");
-  hook.hidden = !deferred;
-  hook.textContent = deferred ? "Esto todavía te puede costar…" : "";
+  document.getElementById("juice-hook").hidden = true;
   juice.classList.add("is-on");
-  if (tone === "loss") hud.classList.add("shake");
-  setTimeout(() => hud.classList.remove("shake"), 400);
 }
 
 function hideJuice() {
   juice.classList.remove("is-on");
 }
 
-function showReveal(upgrade) {
-  document.getElementById("reveal-kicker").textContent =
-    upgrade.kind === "home" ? "¡NUEVO HOGAR!" : "¡NUEVO COCHE!";
-  document.getElementById("reveal-title").textContent = upgrade.title;
-  document.getElementById("reveal-copy").textContent = upgrade.copy;
-  document.getElementById("reveal-art").innerHTML =
-    upgrade.kind === "home" ? houseArt(upgrade.to, "art-xl") : carArt(upgrade.to, "art-xl");
-  reveal.classList.add("is-on");
-}
-
-function hideReveal() {
-  reveal.classList.remove("is-on");
-}
-
-function commitPending() {
-  const pack = state.pending;
-  state.pending = null;
-  if (!pack) return render();
-  if (pack.run.ended) {
-    state.screen = "post";
-    state.beat = 0;
-    state.meta = rememberLife(state.meta, pack.run, pack.view.rank, pack.view.pvAward ?? 0);
-  } else {
-    state.screen = "life";
-  }
+function beginLife(config) {
+  state.game = startMonth(createGame(config));
+  state.view = { event: eventForUI(state.game.pendingEvent) };
+  state.screen = "life";
   persist();
   render();
 }
@@ -195,14 +152,13 @@ function fallbackBoot() {
   return (
     '<section class="screen screen-hero fade-in"><div class="hero-content">' +
     "<h1>¿Qué vida te toca?</h1>" +
-    '<button type="button" class="btn btn-xl" data-act="seeds">EMPEZAR</button></div></section>'
+    '<button type="button" class="btn btn-xl" data-act="worlds">EMPEZAR</button></div></section>'
   );
 }
 
 function render() {
   try {
     paintHud();
-    paintPerkChip();
     topbar.classList.toggle("is-hidden", state.screen === "boot");
     fineprint.classList.toggle("is-hidden", state.screen === "life" || state.screen === "boot");
     document.getElementById("corp-meta").textContent = CORP[state.screen] ?? "VIDA S.A.";
@@ -215,6 +171,14 @@ function render() {
       stageEl.innerHTML = renderIntro(state.introBeat);
       return;
     }
+    if (state.screen === "worlds") {
+      stageEl.innerHTML = renderWorlds();
+      return;
+    }
+    if (state.screen === "create") {
+      stageEl.innerHTML = renderCreate(state.selectedWorld);
+      return;
+    }
     if (state.screen === "seed") {
       stageEl.innerHTML = renderSeeds(state.meta);
       return;
@@ -222,26 +186,15 @@ function render() {
     if (state.screen === "life") {
       if (!state.view?.event) {
         state.screen = "boot";
-        state.run = null;
         stageEl.innerHTML = renderBoot(state.meta);
         return;
       }
-      stageEl.innerHTML = renderLife(state.run, state.view);
-      return;
-    }
-    if (state.screen === "post") {
-      if (!state.view?.rank) {
-        state.screen = "boot";
-        stageEl.innerHTML = renderBoot(state.meta);
-        return;
-      }
-      stageEl.innerHTML = renderPost(state.view, state.meta, state.beat, state.run?.collapse);
+      stageEl.innerHTML = renderLife(state.game?.player ?? {}, state.view);
     }
   } catch {
     state.screen = "boot";
     state.busy = false;
     hideJuice();
-    hideReveal();
     stageEl.innerHTML = fallbackBoot();
   }
 }
@@ -264,65 +217,49 @@ stageEl.addEventListener("click", async (e) => {
     state.introBeat = Math.max(0, state.introBeat - 1);
     return render();
   }
-  if (act === "seeds") {
-    state.screen = "seed";
+  if (act === "worlds") {
+    state.screen = "worlds";
     return render();
   }
   if (act === "boot") {
     state.screen = "boot";
-    state.run = null;
+    state.game = null;
     persist();
     return render();
   }
-  if (act === "again") {
-    state.screen = "seed";
-    state.run = null;
-    persist();
+  if (act === "world") {
+    state.selectedWorld = btn.getAttribute("data-id");
+    state.screen = state.selectedWorld === "capitalismo" ? "seed" : "create";
     return render();
   }
-  if (act === "beat") {
-    state.beat = Math.min(3, state.beat + 1);
-    return render();
+  if (act === "start-game") {
+    const name = document.getElementById("player-name")?.value?.trim() || "Tú";
+    beginLife({ worldId: state.selectedWorld ?? "clasico", name });
+    return;
   }
   if (act === "seed") {
-    const pack = startLife(btn.getAttribute("data-id"), equippedForLife());
-    state.run = pack.run;
-    state.view = pack.view;
-    state.screen = "life";
-    persist();
-    return render();
-  }
-  if (act === "equip") {
-    const res = equipPerk(state.meta, btn.getAttribute("data-id"));
-    if (res.ok) state.meta = res.meta;
-    persist();
-    return render();
-  }
-  if (act === "upgrade") {
-    const res = upgradePerk(state.meta, btn.getAttribute("data-id"));
-    if (res.ok) state.meta = res.meta;
-    persist();
-    return render();
+    const seed = getSeed(btn.getAttribute("data-id"));
+    if (!seed) return;
+    beginLife({ ...seedToGameConfig(seed), name: "Tú" });
+    return;
   }
   if (act === "opt") {
-    if (!state.run || state.run.ended) return;
+    if (!state.game?.pendingEvent) return;
     state.busy = true;
     btn.classList.add("is-picking");
     try {
-      const before = snap(state.run);
-      const ev = state.view.event;
-      const option = ev.options.find((o) => o.id === btn.getAttribute("data-id"));
-      await wait(420);
-      const pack = choose(state.run, btn.getAttribute("data-id"));
-      state.run = pack.run;
-      state.view = pack.view;
-      state.pending = pack;
+      await wait(380);
+      const resolved = resolveDecision(state.game, btn.getAttribute("data-id"));
+      state.game = resolved;
+      const preview = finishMonth(resolved);
+      const nextLabel = hudFromGame(preview).monthYear;
+      state._nextMonthLabel = nextLabel;
       paintHud();
-      showJuice(pack, before, ev.years ?? 2, !!option?.deferred);
+      showJuiceMotor(resolved.lastResult, nextLabel);
       persist();
-    } catch {
+    } catch (err) {
+      console.error(err);
       state.screen = "boot";
-      state.run = null;
       render();
     } finally {
       state.busy = false;
@@ -332,17 +269,12 @@ stageEl.addEventListener("click", async (e) => {
 
 document.getElementById("juice-ok").addEventListener("click", () => {
   hideJuice();
-  const pack = state.pending;
-  if (pack?.view.upgrade) {
-    showReveal(pack.view.upgrade);
-    return;
-  }
-  commitPending();
-});
-
-document.getElementById("reveal-ok").addEventListener("click", () => {
-  hideReveal();
-  commitPending();
+  if (!state.game || state.game.phase !== "showing_result") return;
+  state.game = startMonth(finishMonth(state.game));
+  state.view = { event: eventForUI(state.game.pendingEvent) };
+  state._nextMonthLabel = null;
+  persist();
+  render();
 });
 
 boot();

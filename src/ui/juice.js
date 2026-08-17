@@ -87,6 +87,53 @@ export function formatMoney(n) {
   return sign + "$" + Math.abs(Math.round(n));
 }
 
+const MOTOR_FIELDS = [
+  { key: "salud", art: "hp", label: "Salud" },
+  { key: "felicidad", art: "hap", label: "Felicidad" },
+  { key: "dinero", art: "money", label: "Dinero", money: true },
+  { key: "influencia", art: "spark", label: "Influencia" },
+  { key: "maldad", art: "lock", label: "Maldad", invert: true },
+];
+
+export function snapMotor(player) {
+  const s = player.stats;
+  return {
+    salud: s.salud,
+    felicidad: s.felicidad,
+    dinero: s.dinero,
+    influencia: s.influencia,
+    maldad: s.maldad,
+    job: player.job,
+  };
+}
+
+export function juiceMotorDeltas(before, after) {
+  const out = [];
+  for (const f of MOTOR_FIELDS) {
+    const d = Math.round((after[f.key] ?? 0) - (before[f.key] ?? 0));
+    if (!d) continue;
+    const good = f.invert ? d < 0 : d > 0;
+    out.push({
+      key: f.key,
+      art: f.art,
+      label: f.label,
+      delta: d,
+      from: before[f.key],
+      to: after[f.key],
+      good,
+      money: !!f.money,
+    });
+  }
+  if (before.job !== after.job && after.job) {
+    out.push({ key: "job", art: "job", label: "Trabajo", text: after.job, good: true });
+  }
+  return out;
+}
+
+export function monthTransitionLine(fromLabel, toLabel) {
+  return toLabel || fromLabel;
+}
+
 export function axisLine(dominant, neglected) {
   const d = AXIS_PLAYER[dominant];
   const n = AXIS_PLAYER[neglected];
