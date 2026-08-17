@@ -254,7 +254,9 @@ export function renderLife(game, view) {
   }
 
   return (
-    '<section class="screen screen-life fade-in" data-world="' +
+    '<section class="screen screen-life fade-in' +
+    (view.resolved ? " is-resolved" : "") +
+    '" data-world="' +
     esc(identity.worldId) +
     '">' +
     (chips.length ? '<div class="life-chips">' + chips.join("") + "</div>" : "") +
@@ -273,8 +275,12 @@ export function renderLife(game, view) {
     '</h2><p class="card-body">' +
     esc(body) +
     "</p></article>" +
-    '<p class="choose-prompt">¿Qué haces?</p>' +
-    '<div class="choices">' +
+    '<p class="choose-prompt">' +
+    (view.resolved ? "Decisión tomada" : "¿Qué haces?") +
+    "</p>" +
+    (view.resolved
+      ? '<div class="decision-pending" aria-live="polite"><span class="decision-pending-ico">⏳</span><span>Viendo consecuencias…</span></div>'
+      : '<div class="choices">' +
     ev.options
       .map((o, i) => {
         const hint = o.hint ? '<small class="choice-hint">' + esc(o.hint) + "</small>" : "";
@@ -293,7 +299,7 @@ export function renderLife(game, view) {
         );
       })
       .join("") +
-    "</div>" +
+    "</div>") +
     (hints.length
       ? '<div class="discover-row">' +
         hints

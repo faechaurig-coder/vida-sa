@@ -66,6 +66,7 @@ function isStoryFollowUp(ev, player) {
 function isPlayable(ev, player, session, opts = {}) {
   if (ev.exclusive && session.seenExclusive?.includes(ev.id)) return false;
   if (!opts.ignoreCooldown && isOnCooldown(session, ev.id)) return false;
+  if (!opts.ignoreCooldown && (session.recentEvents ?? []).slice(0, 3).includes(ev.id)) return false;
   if (chapterAlreadySeen(ev, player)) return false;
   return filterEligible([ev], player).length > 0;
 }

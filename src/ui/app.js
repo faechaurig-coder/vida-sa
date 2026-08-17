@@ -52,8 +52,36 @@ const CORP = {
   menu: "Menú",
 };
 
+const AUTO_ADVANCE_MS = 1500;
+const AUTO_UNLOCK_MS = 1800;
+
+let decisionTimer = null;
+
 function wait(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+function clearDecisionTimer() {
+  if (decisionTimer) {
+    clearTimeout(decisionTimer);
+    decisionTimer = null;
+  }
+}
+
+function scheduleAutoAdvance(ms = AUTO_ADVANCE_MS) {
+  clearDecisionTimer();
+  decisionTimer = setTimeout(() => completeResultFlow(), ms);
+}
+
+function completeResultFlow() {
+  clearDecisionTimer();
+  hideJuice();
+  if (!state.game || state.game.phase !== "showing_result") return;
+  if (showNextUnlock()) {
+    scheduleAutoAdvance(AUTO_UNLOCK_MS);
+    return;
+  }
+  advanceAfterResult();
 }
 
 function isInGame() {
@@ -87,6 +115,7 @@ function persist() {
 
 function goToMenu() {
   if (state.game) persist();
+  clearDecisionTimer();
   hideJuice();
   hideUnlock();
   state.unlockQueue = [];
@@ -269,10 +298,12 @@ function showJuiceMotor(result, nextMonthLabel, currentLabel) {
     .join("");
   document.getElementById("juice-hook").hidden = true;
   juice.classList.add("is-on");
+  juice.setAttribute("aria-hidden", "false");
 }
 
 function hideJuice() {
   juice.classList.remove("is-on");
+  juice.setAttribute("aria-hidden", "true");
 }
 
 function queueUnlocks(unlocks = []) {
@@ -289,12 +320,14 @@ function showNextUnlock() {
   document.getElementById("unlock-title").textContent = pres.title;
   document.getElementById("unlock-copy").textContent = pres.body;
   unlockEl.classList.add("is-on");
+  unlockEl.setAttribute("aria-hidden", "false");
   playFx(FX.UNLOCK);
   return true;
 }
 
 function hideUnlock() {
   unlockEl?.classList.remove("is-on");
+  unlockEl?.setAttribute("aria-hidden", "true");
   if (state.unlockQueue.length) {
     setTimeout(() => showNextUnlock(), 120);
   }
@@ -452,25 +485,35 @@ stageEl.addEventListener("click", async (e) => {
     return;
   }
   if (act === "opt") {
+    if (state.game?.phase === "showing_result" && !state.game.pendingEvent) {
+      return completeResultFlow();
+    }
     if (!state.game?.pendingEvent || state.tab !== "life") return;
     state.busy = true;
+    const eventUi = state.view?.event;
     btn.classList.add("is-picking");
     try {
-      await wait(380);
+      await wait(220);
       const currentLabel = hudFromGame(state.game).monthYear;
       const resolved = resolveDecision(state.game, btn.getAttribute("data-id"));
       state.game = resolved;
+      state.view = { event: eventUi, resolved: true };
       const preview = finishMonth(resolved);
       const nextLabel = hudFromGame(preview).monthYear;
       state._nextMonthLabel = nextLabel;
       queueUnlocks(resolved.lastResult?.unlocks ?? []);
+      render();
       paintHud();
       playFx(FX.DECISION);
       showJuiceMotor(resolved.lastResult, nextLabel, currentLabel);
       persist();
+      scheduleAutoAdvance();
     } catch (err) {
       console.error(err);
-      state.screen = "boot";
+      state.view = state.game?.pendingEvent
+        ? { event: eventForUI(state.game.pendingEvent) }
+        : state.view;
+      state.screen = state.game?.pendingEvent ? "life" : "boot";
       render();
     } finally {
       state.busy = false;
@@ -492,6 +535,7 @@ topbar?.addEventListener("click", (e) => {
 });
 
 function advanceAfterResult() {
+  clearDecisionTimer();
   if (!state.game || state.game.phase !== "showing_result") return;
   try {
     state.game = startMonth(finishMonth(state.game));
@@ -510,21 +554,45 @@ function advanceAfterResult() {
   }
 }
 
-document.getElementById("juice-ok").addEventListener("click", () => {
-  hideJuice();
-  if (!state.game || state.game.phase !== "showing_result") return;
-  if (showNextUnlock()) return;
-  advanceAfterResult();
+document.getElementById("juice-ok").addEventListener("click", (e) => {
+  e.stopPropagation();
+  completeResultFlow();
 });
 
-document.getElementById("unlock-ok")?.addEventListener("click", () => {
+juice?.addEventListener("click", (e) => {
+  if (!juice.classList.contains("is-on")) return;
+  if (e.target.closest("#juice-ok")) return;
+  if (e.target.closest(".juice-card")) completeResultFlow();
+});
+
+document.getElementById("unlock-ok")?.addEventListener("click", (e) => {
+  e.stopPropagation();
   hideUnlock();
   if (state.unlockQueue.length) {
-    setTimeout(() => showNextUnlock(), 120);
+    setTimeout(() => {
+      showNextUnlock();
+      scheduleAutoAdvance(AUTO_UNLOCK_MS);
+    }, 120);
     return;
   }
   if (state.game?.phase === "showing_result" && !juice.classList.contains("is-on")) {
-    advanceAfterResult();
+    completeResultFlow();
+  }
+});
+
+unlockEl?.addEventListener("click", (e) => {
+  if (!unlockEl.classList.contains("is-on")) return;
+  if (e.target.closest("#unlock-ok")) return;
+  if (e.target.closest(".unlock-card")) {
+    hideUnlock();
+    if (state.unlockQueue.length) {
+      setTimeout(() => {
+        showNextUnlock();
+        scheduleAutoAdvance(AUTO_UNLOCK_MS);
+      }, 120);
+      return;
+    }
+    if (state.game?.phase === "showing_result") completeResultFlow();
   }
 });
 

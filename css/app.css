@@ -682,6 +682,31 @@ h2 { font-size: clamp(1.35rem, 5.5vw, 1.7rem); }
   color: var(--muted);
 }
 
+.decision-pending {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 56px;
+  margin-bottom: 8px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fff8ee 0%, #f0e4d0 100%);
+  border: 1px solid rgba(232, 184, 74, 0.35);
+  box-shadow: var(--shadow-3d-sm), var(--shine);
+  font-weight: 800;
+  color: #6a5040;
+  animation: rise 0.35s var(--ease) both;
+}
+.decision-pending-ico {
+  font-size: 1.2rem;
+  animation: stat-pop 0.9s var(--ease) infinite;
+}
+.screen-life.is-resolved .event-card {
+  opacity: 0.92;
+  transform: scale(0.995);
+}
+
 .event-card {
   background: var(--grad-dark);
   color: #f6efe4;
