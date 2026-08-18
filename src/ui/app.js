@@ -13,7 +13,7 @@ import {
   renderMissions,
 } from "./render-progress.js";
 import { unlockPresentation } from "../motor/unlocks.js";
-import { characterMood, lifeIdentity, vitalsForHud } from "./life-view.js";
+import { characterMood, lifeIdentity, vitalsForHud, contextualizeEventForPlayer } from "./life-view.js";
 import { FX, playFx } from "./fx.js";
 
 const stageEl = document.getElementById("stage");
@@ -56,6 +56,11 @@ const AUTO_ADVANCE_MS = 1500;
 const AUTO_UNLOCK_MS = 1800;
 
 let decisionTimer = null;
+
+function lifeEventView(game) {
+  const ev = eventForUI(game?.pendingEvent);
+  return contextualizeEventForPlayer(ev, game?.player);
+}
 
 function wait(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -147,7 +152,7 @@ function continueLife() {
     return render();
   }
   state.game = game;
-  state.view = { event: eventForUI(game.pendingEvent) };
+  state.view = { event: lifeEventView(game) };
   state.screen = "life";
   state.tab = saved.session?.tab === "life" || !saved.session?.tab ? "life" : saved.session.tab;
   if (state.tab !== "life") state.screen = state.tab;
@@ -296,7 +301,16 @@ function showJuiceMotor(result, nextMonthLabel, currentLabel) {
       );
     })
     .join("");
-  document.getElementById("juice-hook").hidden = true;
+  const hookEl = document.getElementById("juice-hook");
+  if (hookEl) {
+    if (result.hook) {
+      hookEl.textContent = result.hook;
+      hookEl.hidden = false;
+    } else {
+      hookEl.hidden = true;
+      hookEl.textContent = "";
+    }
+  }
   juice.classList.add("is-on");
   juice.setAttribute("aria-hidden", "false");
 }
@@ -335,7 +349,7 @@ function hideUnlock() {
 
 function beginLife(config) {
   state.game = startMonth(createGame(config));
-  state.view = { event: eventForUI(state.game.pendingEvent) };
+  state.view = { event: lifeEventView(state.game) };
   state.screen = "life";
   state.tab = "life";
   state.selectedStoryId = null;
@@ -511,7 +525,7 @@ stageEl.addEventListener("click", async (e) => {
     } catch (err) {
       console.error(err);
       state.view = state.game?.pendingEvent
-        ? { event: eventForUI(state.game.pendingEvent) }
+        ? { event: lifeEventView(state.game) }
         : state.view;
       state.screen = state.game?.pendingEvent ? "life" : "boot";
       render();
@@ -539,7 +553,7 @@ function advanceAfterResult() {
   if (!state.game || state.game.phase !== "showing_result") return;
   try {
     state.game = startMonth(finishMonth(state.game));
-    state.view = { event: eventForUI(state.game.pendingEvent) };
+    state.view = { event: lifeEventView(state.game) };
     state._nextMonthLabel = null;
     playFx(FX.MONTH);
     persist();

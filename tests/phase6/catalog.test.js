@@ -43,7 +43,7 @@ describe("fase 6 · catálogo de contenido", () => {
   it("catálogo clásico valida sin errores", () => {
     const cat = CATALOGS.clasico;
     assert.equal(validateCatalog(cat.events, { worldId: "clasico" }).length, 0);
-    assert.equal(cat.events.length, 25);
+    assert.equal(cat.events.length, 125);
   });
 
   it("catálogo capitalismo incluye 11 legacy + hint", () => {
@@ -61,9 +61,9 @@ describe("fase 6 · catálogo de contenido", () => {
 
   it("matriz resume eventos por etapa y tipo", () => {
     const summary = CATALOGS.clasico.summary;
-    assert.ok(summary.total >= 25);
-    assert.ok(summary.byStage.infancia >= 5);
-    assert.ok(summary.byKind.story >= 5);
+    assert.ok(summary.total >= 90);
+    assert.ok(summary.byStage.infancia >= 15);
+    assert.ok(summary.byKind.story >= 25);
     assert.equal(summary.stories.length, 5);
   });
 
@@ -111,7 +111,7 @@ describe("fase 6 · catálogo de contenido", () => {
 
   it("eventos de historia tienen storyId y kind story", () => {
     const stories = getCatalog("clasico").filter((e) => e.kind === EVENT_KINDS.STORY);
-    assert.equal(stories.length, 9);
+    assert.ok(stories.length >= 25);
     assert.ok(stories.every((e) => e.storyId && STORY_DEFS[e.storyId]));
   });
 

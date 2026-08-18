@@ -52,7 +52,7 @@ function unlockCollectible(collection, { kind, tier, id }) {
 }
 
 export function tickEconomy(player) {
-  const upkeep = (player.home ?? 0) * 8 + (player.car ?? 0) * 6;
+  const upkeep = (player.home ?? 0) * 5 + (player.car ?? 0) * 4;
   const flow = (player.income ?? 0) - (player.expenses ?? 0) - upkeep;
   let next = { ...player };
   next.stats = applyStatDelta(next.stats, { dinero: flow });

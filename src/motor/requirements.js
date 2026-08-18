@@ -27,6 +27,7 @@ export function meetsRequirements(player, req = {}) {
   if (req.careerId && player.careerId !== req.careerId) return false;
 
   if (req.flags?.length && !req.flags.every((f) => player.flags.includes(f))) return false;
+  if (req.requireAnyFlag?.length && !req.requireAnyFlag.some((f) => player.flags.includes(f))) return false;
   if (req.flagsNot?.length && req.flagsNot.some((f) => player.flags.includes(f))) return false;
   if (req.requireFlags?.length && !req.requireFlags.every((f) => player.flags.includes(f))) return false;
   if (req.forbidFlags?.length && req.forbidFlags.some((f) => player.flags.includes(f))) return false;
@@ -43,7 +44,27 @@ export function meetsRequirements(player, req = {}) {
     if (req.storyActive && prog.completed) return false;
   }
 
+  if (req.homeMin != null && (player.home ?? 0) < req.homeMin) return false;
+  if (req.homeMax != null && (player.home ?? 0) > req.homeMax) return false;
+  if (req.carMin != null && (player.car ?? 0) < req.carMin) return false;
+  if (req.carMax != null && (player.car ?? 0) > req.carMax) return false;
+
   if (req.fameLine && player.fame?.line !== req.fameLine) return false;
+
+  if (req.partnerTraitMin) {
+    const traits = player.partner?.traits;
+    if (!traits) return false;
+    for (const [key, min] of Object.entries(req.partnerTraitMin)) {
+      if ((traits[key] ?? 0) < min) return false;
+    }
+  }
+  if (req.partnerTraitMax) {
+    const traits = player.partner?.traits;
+    if (!traits) return false;
+    for (const [key, max] of Object.entries(req.partnerTraitMax)) {
+      if ((traits[key] ?? 100) > max) return false;
+    }
+  }
 
   if (req.collectible != null) {
     const { kind, tier, unlocked } = req.collectible;

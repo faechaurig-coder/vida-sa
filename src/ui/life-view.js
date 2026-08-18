@@ -133,3 +133,80 @@ export function lifeIdentity(player, worldId) {
     worldId: worldId ?? player?.worldId ?? "clasico",
   };
 }
+
+const PARTNER_EVENT_BODY = {
+  c_adu_pareja_apoyo: (partner) => {
+    const e = partner.traits.empatia;
+    if (e >= 60) return "Te despidieron. Tu pareja propone ayudarte mientras encuentras algo nuevo.";
+    if (e <= 40) return "Te despidieron. Tu pareja dice que deberías resolverlo por tu cuenta.";
+    return "Te despidieron. El silencio en casa pesa más que las palabras.";
+  },
+  c_adu_pareja_mudanza: (partner) => {
+    const a = partner.traits.ambicion;
+    if (a >= 60) return "Tu pareja consiguió una oferta en otra ciudad y quiere que vayan juntos.";
+    return "Tu pareja habla de mudarse, pero no parece tan segura de la oportunidad.";
+  },
+  c_adu_pareja_viaje: (partner) => {
+    const r = partner.traits.riesgo;
+    if (r >= 60) return "Tu pareja reservó un viaje sorpresa sin consultar el presupuesto.";
+    return "Tu pareja propone un viaje modesto para desconectar un rato.";
+  },
+  c_adu_pareja_inversion: (partner) => {
+    const r = partner.traits.riesgo;
+    if (r >= 60) return "Tu pareja quiere invertir sus ahorros en una oportunidad arriesgada.";
+    return "Tu pareja sugiere guardar el dinero en algo seguro por ahora.";
+  },
+  c_adu_pareja_cariño: (partner) => {
+    const c = partner.traits.carrino;
+    if (c >= 60) return "Tu pareja nota que estás mal y cancela sus planes para acompañarte.";
+    return "Tu pareja está demasiado distante últimamente.";
+  },
+  c_adu_pareja_estabilidad: (partner) => {
+    const a = partner.traits.ambicion;
+    if (a <= 45) return "Tu pareja prefiere quedarse y mantener la estabilidad.";
+    return "Tu pareja habla de estabilidad, pero no suena convencida.";
+  },
+  c_adu_pareja_meta: (partner) => {
+    const a = partner.traits.ambicion;
+    if (a >= 60) return "Tu pareja quiere mudarse o cambiar de vida para aprovechar una oportunidad.";
+    return "Tu pareja menciona metas grandes. Te miran esperando respuesta.";
+  },
+};
+
+/** Personaliza copy según rasgos internos de la pareja (sin mostrarlos al jugador). */
+export function contextualizeEventForPlayer(event, player) {
+  if (!event || !player?.partner?.active) return event;
+  const flavor = PARTNER_EVENT_BODY[event.id];
+  if (!flavor) return event;
+  const body = flavor(player.partner);
+  if (!body) return event;
+  return { ...event, body };
+}
+
+export function optionSubtitle(option) {
+  if (option?.hint) return option.hint;
+  const fx = option?.effects ?? {};
+  const bits = [];
+  if (fx.money > 80) bits.push("Buen dinero");
+  else if (fx.money > 0) bits.push("Algo de dinero");
+  else if (fx.money < -50) bits.push("Cuesta dinero");
+  else if (fx.money < 0) bits.push("Gasto pequeño");
+  if (fx.happiness >= 6) bits.push("Te hará feliz");
+  else if (fx.happiness <= -4) bits.push("Puede doler");
+  if (fx.evil >= 5 || fx.maldad >= 5) bits.push("Mala decisión");
+  else if (fx.evil <= -2 || fx.maldad <= -2) bits.push("Buen acto");
+  if (fx.influence >= 6 || fx.influencia >= 6) bits.push("Más influencia");
+  if (fx.health <= -4 || fx.salud <= -4) bits.push("Cuidado con la salud");
+  return bits.slice(0, 2).join(" · ") || "Un camino distinto";
+}
+
+export function optionIcon(option, index = 0) {
+  const fx = option?.effects ?? {};
+  if (fx.evil > 0 || fx.maldad > 0) return "😈";
+  if (fx.money > 0) return "💰";
+  if (fx.money < 0) return "💸";
+  if (fx.happiness > 0 || fx.felicidad > 0) return "😊";
+  if (fx.influence > 0 || fx.influencia > 0) return "👑";
+  if (fx.health < 0 || fx.salud < 0) return "⚠️";
+  return String(index + 1);
+}

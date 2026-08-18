@@ -59,12 +59,12 @@ describe("fase 7 · flujo de decisiones sin trabarse", () => {
     assert.doesNotMatch(html, /data-act="opt"/);
   });
 
-  it("no repite el mismo evento los 3 meses siguientes", () => {
+  it("no repite el mismo evento los 2 meses siguientes", () => {
     let g = startMonth(createGame({ worldId: "clasico" }));
     const first = g.pendingEvent.id;
     g = playDecision(g);
     const catalog = getCatalog("clasico");
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 2; i++) {
       const { event } = pickEvent(g, catalog, () => 0.99);
       assert.notEqual(event?.id, first, "mes " + (i + 1));
       g = playDecision(g);

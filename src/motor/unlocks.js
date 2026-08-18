@@ -72,9 +72,9 @@ export function unlockPresentation(unlock, game) {
   if (unlock.type === "story") {
     const def = getStoryDef(unlock.id);
     return {
-      kicker: "NUEVA HISTORIA",
-      title: def?.title ?? unlock.id,
-      body: "Has descubierto un nuevo camino.",
+      kicker: "Algo se abre",
+      title: def?.teaser ?? "Un camino nuevo",
+      body: def?.mystery ?? "Has descubierto un nuevo camino.",
       emoji: def?.emoji ?? "📖",
     };
   }
@@ -83,9 +83,9 @@ export function unlockPresentation(unlock, game) {
     const def = getStoryDef(unlock.storyId);
     const ch = def?.chapters?.find((c) => c.id === unlock.chapterId);
     return {
-      kicker: "NUEVO CAPÍTULO",
+      kicker: "Sigue tu camino",
       title: ch?.label ?? "Capítulo",
-      body: def?.title ? "Tu historia de " + def.title.toLowerCase() + " avanza." : "Tu historia avanza.",
+      body: "Tal vez deberías seguir haciendo esto.",
       emoji: ch?.emoji ?? "⭐",
     };
   }

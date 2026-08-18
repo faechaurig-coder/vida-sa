@@ -3,7 +3,7 @@ import { createCalendar, computeAge, advanceMonth as nextMonth, formatMonthYear 
 import { stageForAge } from "../foundation/stages.js";
 import { partnerMonthlyEffect } from "../foundation/relationships/partner.js";
 import { applyStatDelta } from "../foundation/stats.js";
-import { pickEvent, registerEventPlayed, ageDeferred } from "./picker.js";
+import { pickEvent, registerEventPlayed, ageDeferred, cooldownForEvent } from "./picker.js";
 import { createPartner } from "../foundation/relationships/partner.js";
 import { applyOptionEffects, tickEconomy, snapPlayer, deltaFromSnap } from "./effects.js";
 import { meetsRequirements } from "./requirements.js";
@@ -128,7 +128,7 @@ export function resolveDecision(game, optionId) {
     if (careerTitle) player.job = careerTitle;
   }
   if (option.unlock?.partner) {
-    player.partner = createPartner(option.partnerTraits ?? {});
+    player.partner = createPartner(option.unlock.partnerTraits ?? option.partnerTraits ?? {});
   }
 
   const deferred = [...(game.deferred ?? [])];
@@ -156,13 +156,14 @@ export function resolveDecision(game, optionId) {
         eventId: event.id,
         optionId,
         text: option.resultText ?? option.punchline ?? "Decidiste.",
+        hook: option.hook ?? null,
         deltas: deltaFromSnap(before, after),
         before,
         after,
       },
     },
     event.id,
-    event.cooldown ?? 6,
+    event.cooldown ?? cooldownForEvent(event),
     event.exclusive ? [event.id] : null,
   );
 
@@ -264,6 +265,7 @@ export function eventForUI(event) {
       id: o.id,
       label: o.text ?? o.label,
       hint: o.hint ?? "",
+      effects: o.effects ?? o.immediate ?? {},
     })),
   };
 }

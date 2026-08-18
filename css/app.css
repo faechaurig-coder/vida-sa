@@ -659,7 +659,32 @@ h2 { font-size: clamp(1.35rem, 5.5vw, 1.7rem); }
   box-shadow: var(--shine);
 }
 
-.life-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+.life-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.life-month-bar {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #fffefb 0%, #f3ead8 55%, #ebe0d0 100%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-3d-sm), var(--shine);
+  text-align: center;
+}
+.life-month-label {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(1.35rem, 6vw, 1.65rem);
+  font-weight: 700;
+  color: #2a2420;
+  letter-spacing: 0.02em;
+}
+.life-month-meta {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
 .life-chip {
   font-size: 0.68rem;
   font-weight: 800;
@@ -674,12 +699,12 @@ h2 { font-size: clamp(1.35rem, 5.5vw, 1.7rem); }
 .life-chip.is-heart { background: #fde8ee; color: #a04058; }
 
 .choose-prompt {
-  margin: 0 0 8px;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: #8a6418;
 }
 
 .decision-pending {
@@ -701,6 +726,59 @@ h2 { font-size: clamp(1.35rem, 5.5vw, 1.7rem); }
 .decision-pending-ico {
   font-size: 1.2rem;
   animation: stat-pop 0.9s var(--ease) infinite;
+}
+.event-card.event-card-hero {
+  padding: 0;
+  margin-bottom: 14px;
+  min-height: 0;
+}
+.event-visual {
+  display: grid;
+  place-items: center;
+  font-size: 3.2rem;
+  line-height: 1;
+  padding: 22px 16px 10px;
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 0%, rgba(255, 248, 238, 0.14), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.event-card-inner { padding: 10px 16px 16px; position: relative; z-index: 1; }
+.event-card h2 {
+  font-size: clamp(1.28rem, 5.5vw, 1.55rem);
+}
+.choices-stack { gap: 10px; }
+.choice.choice-card {
+  align-items: center;
+  min-height: 68px;
+  padding: 14px 14px;
+  border-radius: 18px;
+  box-shadow:
+    0 6px 0 rgba(150, 130, 100, 0.45),
+    var(--shine),
+    0 12px 24px rgba(40, 24, 10, 0.12);
+}
+.choice-chevron {
+  flex-shrink: 0;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: rgba(42, 36, 32, 0.35);
+  margin-left: 4px;
+}
+.choice-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #7a6e62;
+  line-height: 1.25;
+}
+.choice-a.choice-card { border-left: 4px solid #2f9a52; }
+.choice-b.choice-card { border-left: 4px solid #d07028; }
+.choice-c.choice-card { border-left: 4px solid #3a7eb8; }
+.choice-d.choice-card { border-left: 4px solid #6a50a0; }
+.screen-life {
+  padding-bottom: 8px;
 }
 .screen-life.is-resolved .event-card {
   opacity: 0.92;
@@ -793,14 +871,16 @@ h2 { font-size: clamp(1.35rem, 5.5vw, 1.7rem); }
   cursor: pointer;
   font-family: inherit;
 }
+.choice.has-hint { min-height: 64px; }
 .choice-mark {
   flex-shrink: 0;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 9px;
   display: grid;
   place-items: center;
-  font-size: 0.78rem;
+  font-size: 0.9rem;
+  line-height: 1;
   background: linear-gradient(180deg, #3d3648, #2a2430);
   color: #fff8ee;
   margin-top: 1px;
@@ -918,9 +998,21 @@ h2 { font-size: clamp(1.35rem, 5.5vw, 1.7rem); }
 .delta.down { color: #f07080; }
 .juice-hook {
   margin: 0 0 12px;
-  font-size: 0.9rem;
-  color: var(--gold);
+  font-size: 0.92rem;
+  color: #f6d070;
   font-weight: 800;
+  font-style: italic;
+  line-height: 1.35;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(246, 208, 112, 0.08);
+  border: 1px solid rgba(246, 208, 112, 0.15);
+}
+.juice-line {
+  font-size: 1rem;
+  line-height: 1.45;
+  margin: 0 0 10px;
+  color: #e8dfd0;
 }
 
 .reveal-art { min-height: 120px; display: grid; place-items: center; margin: 6px 0 10px; }
@@ -1098,8 +1190,15 @@ h2 { font-size: clamp(1.35rem, 5.5vw, 1.7rem); }
   .hud-avatar, .hud-avatar .art-char { width: 42px; height: 42px; }
   .hud-cash { font-size: 1rem; }
   .vital { font-size: 0.72rem; padding: 4px 4px; }
-  .event-card { padding: 12px 14px; }
-  .choice { min-height: 52px; padding: 10px; }
+  .event-card { padding: 14px 14px 16px; margin-bottom: 12px; }
+  .event-card h2 { font-size: 1.2rem; }
+  .event-card .card-body { font-size: 0.92rem; }
+  .choices { gap: 10px; }
+  .choice { min-height: 58px; padding: 11px 12px; font-size: 0.95rem; }
+  .choice.has-hint { min-height: 68px; }
+  .choose-prompt { font-size: 0.88rem; margin-bottom: 8px; }
+  .overlay-card { padding: 20px 16px 16px; border-radius: 22px; }
+  .juice-hero { font-size: 2rem; }
 }
 
 .shake { animation: shake 0.35s ease; }

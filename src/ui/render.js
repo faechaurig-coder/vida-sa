@@ -16,7 +16,8 @@ import {
 import { axisLine } from "./juice.js";
 import { cityBg, icon, logoMark, radar, seedArt } from "./art.js";
 import { listPlayableWorlds } from "../content/worlds/index.js";
-import { categoryVis, discoveryHints, lifeIdentity } from "./life-view.js";
+import { categoryVis, discoveryHints, lifeIdentity, optionIcon, optionSubtitle } from "./life-view.js";
+import { formatMonthYear } from "../foundation/time.js";
 
 function esc(s) {
   return String(s ?? "")
@@ -245,6 +246,7 @@ export function renderLife(game, view) {
   const hints = discoveryHints(player);
   const tones = ["choice-a", "choice-b", "choice-c", "choice-d"];
   const isStory = ev.kind === "story" || ev.storyId;
+  const monthLabel = formatMonthYear(player.calendar ?? { month: 1, year: 2026 });
 
   const chips = [];
   if (identity.partner) chips.push('<span class="life-chip is-heart">❤️ Relación</span>');
@@ -259,12 +261,26 @@ export function renderLife(game, view) {
     '" data-world="' +
     esc(identity.worldId) +
     '">' +
+    '<header class="life-month-bar">' +
+    '<p class="life-month-label">' +
+    esc(monthLabel) +
+    "</p>" +
+    '<p class="life-month-meta">' +
+    esc(String(identity.age)) +
+    " años · " +
+    esc(identity.stageLabel) +
+    "</p>" +
+    "</header>" +
     (chips.length ? '<div class="life-chips">' + chips.join("") + "</div>" : "") +
-    '<article class="event-card' +
+    '<article class="event-card event-card-hero' +
     (isStory ? " is-story" : "") +
     " cat-" +
     esc(ev.category || "especial") +
     '">' +
+    '<div class="event-visual" aria-hidden="true">' +
+    cat.emoji +
+    "</div>" +
+    '<div class="event-card-inner">' +
     '<p class="event-cat"><span class="event-cat-ico">' +
     cat.emoji +
     "</span>" +
@@ -274,28 +290,30 @@ export function renderLife(game, view) {
     esc(ev.title) +
     '</h2><p class="card-body">' +
     esc(body) +
-    "</p></article>" +
+    "</p></div></article>" +
     '<p class="choose-prompt">' +
-    (view.resolved ? "Decisión tomada" : "¿Qué haces?") +
+    (view.resolved ? "Decisión tomada" : "Elige tu camino") +
     "</p>" +
     (view.resolved
       ? '<div class="decision-pending" aria-live="polite"><span class="decision-pending-ico">⏳</span><span>Viendo consecuencias…</span></div>'
-      : '<div class="choices">' +
+      : '<div class="choices choices-stack">' +
     ev.options
       .map((o, i) => {
-        const hint = o.hint ? '<small class="choice-hint">' + esc(o.hint) + "</small>" : "";
+        const sub = optionSubtitle(o);
+        const mark = optionIcon(o, i);
         return (
-          '<button type="button" class="choice ' +
+          '<button type="button" class="choice choice-card ' +
           tones[i % 4] +
           '" data-act="opt" data-id="' +
           o.id +
           '"><span class="choice-mark">' +
-          (i + 1) +
+          mark +
           '</span><span class="choice-copy"><span class="choice-label">' +
           esc(o.label) +
-          "</span>" +
-          hint +
-          "</span></button>"
+          '</span><small class="choice-hint">' +
+          esc(sub) +
+          "</small></span>" +
+          '<span class="choice-chevron" aria-hidden="true">›</span></button>'
         );
       })
       .join("") +

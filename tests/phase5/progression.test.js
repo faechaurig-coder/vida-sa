@@ -120,7 +120,7 @@ describe("fase 5 · progresión", () => {
     let game = startMonth(createGame({ worldId: "clasico" }));
     const musica = getCatalog("clasico").find((e) => e.id === "c_inf_musica");
     game = { ...game, pendingEvent: musica, phase: "awaiting_decision" };
-    game = resolveDecision(game, "si");
+    game = resolveDecision(game, "clases");
     assert.ok(game.lastResult?.unlocks?.some((u) => u.type === "story"));
     assert.ok(game.player.stories.cantante?.discovered);
   });

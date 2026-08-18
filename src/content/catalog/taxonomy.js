@@ -57,6 +57,7 @@ export const CATEGORY_ALIASES = {
   estudios: "escuela",
   historias: "especial",
   eventos: "especial",
+  maldad: "personalidad",
 };
 
 /**

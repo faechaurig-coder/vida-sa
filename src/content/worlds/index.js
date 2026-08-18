@@ -1,5 +1,5 @@
 import { CLASSIC_EVENTS } from "./clasico/events.js";
-import { CLASSIC_STORIES, CLASSIC_CAREERS } from "./clasico/meta.js";
+import { CLASSIC_STORIES, CLASSIC_CAREERS, CLASSIC_MISSIONS, CLASSIC_COLLECTIBLES } from "./clasico/meta.js";
 import { CAPITALISMO_EVENTS } from "./capitalismo/events.js";
 import { CAPITALISMO_MISSIONS, CAPITALISMO_COLLECTIBLES } from "./capitalismo/meta.js";
 import { SEEDS } from "../seeds.js";
@@ -13,8 +13,8 @@ const WORLDS = {
     events: CLASSIC_EVENTS,
     stories: CLASSIC_STORIES,
     careers: CLASSIC_CAREERS,
-    missions: [],
-    collectibles: null,
+    missions: CLASSIC_MISSIONS,
+    collectibles: CLASSIC_COLLECTIBLES,
     origins: null,
   },
   capitalismo: {

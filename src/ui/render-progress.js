@@ -202,7 +202,8 @@ export function renderMissions(game) {
 
   const card = (label, m, kind) => {
     if (!m) return "";
-    const progress = m.target ? Math.min(100, Math.round((view.money / m.target) * 100)) : 0;
+    const progress = m.progress ?? 0;
+    const progressLabel = m.progressLabel;
     return (
       '<article class="mission-card is-' +
       kind +
@@ -210,7 +211,8 @@ export function renderMissions(game) {
       '<span class="mission-tag">' +
       esc(label) +
       "</span>" +
-      "<h3>💰 " +
+      "<h3>" +
+      (m.type === "money" ? "💰 " : m.type === "job" ? "💼 " : m.type === "fame" ? "⭐ " : m.type === "story" ? "📖 " : "🏆 ") +
       esc(m.title) +
       "</h3>" +
       '<p class="mission-desc">' +
@@ -220,11 +222,15 @@ export function renderMissions(game) {
         ? '<div class="progress-bar mission-bar"><span style="width:' +
           progress +
           '%"></span></div>' +
-          '<p class="mission-money">' +
-          formatMoney(view.money) +
-          " / " +
-          formatMoney(m.target) +
-          "</p>"
+          (m.type === "money"
+            ? '<p class="mission-money">' +
+              formatMoney(view.money) +
+              " / " +
+              formatMoney(m.target) +
+              "</p>"
+            : progressLabel
+              ? '<p class="mission-money">' + esc(progressLabel) + "</p>"
+              : "")
         : "") +
       (kind === "previous" ? '<p class="mission-done">✓ Completada</p>' : "") +
       (kind === "next" && m.locked ? '<p class="mission-lock">Se desbloquea al completar la misión actual.</p>' : "") +
