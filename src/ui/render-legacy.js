@@ -27,7 +27,7 @@ function node(person, fallback, kind) {
     avatar(kind) +
     '</span><strong>' +
     esc(person.name) +
-    "</strong><span class="life-who">' +
+    '</strong><span class="life-who">' +
     esc(label(kind, status)) +
     "</span></div>"
   );
