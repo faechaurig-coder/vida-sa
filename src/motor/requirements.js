@@ -24,6 +24,21 @@ export function meetsRequirements(player, req = {}) {
   if (req.hasJob === false && player.job) return false;
   if (req.hasPartner === true && !player.partner?.active) return false;
   if (req.hasPartner === false && player.partner?.active) return false;
+  if (req.partnerStatus) {
+    const st = player.family?.partner?.status;
+    if (st !== req.partnerStatus) return false;
+  }
+  if (req.hasEx === true && !(player.family?.exPartners?.length)) return false;
+  if (req.hasChild === true && !(player.family?.children?.length)) return false;
+  if (req.hasChild === false && player.family?.children?.length) return false;
+  if (req.childMinAge != null || req.childMaxAge != null) {
+    const year = player.calendar?.year;
+    const kids = player.family?.children ?? [];
+    if (!kids.length) return false;
+    const ages = kids.map((c) => Math.max(0, (year ?? 2026) - (c.birthYear ?? year)));
+    if (req.childMinAge != null && !ages.some((a) => a >= req.childMinAge)) return false;
+    if (req.childMaxAge != null && !ages.some((a) => a <= req.childMaxAge)) return false;
+  }
   if (req.careerId && player.careerId !== req.careerId) return false;
 
   if (req.flags?.length && !req.flags.every((f) => player.flags.includes(f))) return false;
@@ -72,6 +87,31 @@ export function meetsRequirements(player, req = {}) {
     if (!slot) return false;
     if (unlocked && !slot.unlocked) return false;
   }
+
+  if (req.houseId != null && player.houseId !== req.houseId) return false;
+  if (req.carId != null && player.carId !== req.carId) return false;
+
+  if (req.businessId != null) {
+    if (!player.business || player.business.id !== req.businessId) return false;
+  }
+  if (req.businessTierMin != null && (player.business?.tier ?? 0) < req.businessTierMin) return false;
+  if (req.businessTierMax != null && (player.business?.tier ?? 0) > req.businessTierMax) return false;
+  if (req.businessIncomeMin != null && (player.business?.monthlyIncome ?? 0) < req.businessIncomeMin)
+    return false;
+
+  if (req.relationshipId != null) {
+    const rel = player.relationships?.[req.relationshipId];
+    if (!rel) return false;
+    if (req.relationshipType && rel.type !== req.relationshipType) return false;
+    if (req.relationshipState && rel.state !== req.relationshipState) return false;
+    if (req.relationshipFlags?.length) {
+      const rf = rel.flags ?? [];
+      if (!req.relationshipFlags.every((f) => rf.includes(f))) return false;
+    }
+  }
+
+  if (req.hasBusiness === true && !player.business) return false;
+  if (req.hasBusiness === false && player.business) return false;
 
   return true;
 }

@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "start": "node scripts/dev-server.mjs",
-    "test": "node --test tests/*.test.js tests/foundation/*.test.js tests/motor/*.test.js tests/phase5/*.test.js tests/phase6/*.test.js tests/phase7/*.test.js"
+    "test": "node --test tests/*.test.js tests/foundation/*.test.js tests/motor/*.test.js tests/phase5/*.test.js tests/phase6/*.test.js tests/phase7/*.test.js tests/phase8/*.test.js tests/phase9/*.test.js",
+    "simulate": "node scripts/simulate.mjs",
+    "debug-event": "node scripts/debug-event.mjs"
   }
 }

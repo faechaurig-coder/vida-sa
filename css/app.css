@@ -1104,7 +1104,32 @@ h2 { font-size: clamp(1.35rem, 5.5vw, 1.7rem); }
   line-height: 1;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
 }
-.nav-tab.is-on .nav-icon { filter: drop-shadow(0 2px 6px rgba(232, 184, 74, 0.45)); }
+.nav-tab { font-size: 0.52rem; max-width: 72px; padding: 6px 2px 6px; }
+.life-map { display: flex; flex-direction: column; gap: 14px; margin: 16px 0 22px; }
+.life-row { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.life-node {
+  min-width: 88px;
+  max-width: 120px;
+  padding: 10px 8px;
+  border-radius: 18px;
+  background: rgba(255, 248, 238, 0.08);
+  text-align: center;
+  color: #fff8ee;
+}
+.life-node.is-you { background: linear-gradient(180deg, rgba(232, 184, 74, 0.35), rgba(255,255,255,0.08)); }
+.life-node.is-empty { opacity: 0.45; }
+.life-avatar { display: block; font-size: 1.4rem; }
+.life-who { display: block; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: #c4b8a8; }
+.legacy-moments { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
+.legacy-moments li {
+  background: rgba(255,248,238,0.07);
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 0.92rem;
+}
+.epitaph { font-family: Fraunces, serif; font-size: 1.15rem; line-height: 1.45; }
+.ended-facts { list-style: none; padding: 0; display: grid; gap: 6px; margin: 16px 0; }
+
 .nav-label { line-height: 1.1; text-align: center; width: 100%; }
 
 .screen-sub { padding-bottom: 8px; }

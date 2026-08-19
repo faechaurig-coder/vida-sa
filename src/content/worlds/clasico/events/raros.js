@@ -109,14 +109,29 @@ export const RAROS_EVENTS = [
     title: "La propuesta de inversión",
     description: "Un desconocido te ofrece invertir en algo demasiado bueno para ser verdad.",
     options: [
-      opt("invertir", "Invertir", { money: -200, happiness: 2, evil: 3 }, {
-        resultText: "Sonó bien al principio. Luego, menos.",
+      opt("invertir", "Meter el dinero ya", { money: -200, happiness: 2, evil: 3, flagsAdd: ["invirtio_negocio"] }, {
+        profile: "risky",
+        visibility: "hidden",
+        resultText: "Firmaste. Durante semanas no pasó nada.",
+        hook: "No parece pasar nada… todavía.",
+        deferred: { type: "event", id: "c_adu_inversion_cae", after: 3 },
       }),
-      opt("rechazar", "Rechazar", { happiness: 2, influence: 2 }, {
+      opt("rechazar", "Decir que no, sin más", { happiness: 2, influence: 2 }, {
+        profile: "safe",
         resultText: "Te alejaste. A veces la intuición paga.",
       }),
       opt("investigar", "Investigar primero", { influence: 5, happiness: 1, money: -20 }, {
+        profile: "safe",
+        revealedEffects: ["dinero"],
+        visibility: "partial",
         resultText: "Encontraste grietas. Te salvaste.",
+      }),
+      opt("socio", "Entrar, pero con un socio que ponga la mitad", { money: -100, influence: 3, flagsAdd: ["invirtio_negocio"] }, {
+        profile: "ambiguous",
+        visibility: "hidden",
+        requirements: { moneyMin: 100 },
+        resultText: "Dividiste el riesgo. También el control.",
+        deferred: { type: "event", id: "c_adu_inversion_cae", after: 4 },
       }),
     ],
   }),
@@ -255,7 +270,7 @@ export const RAROS_EVENTS = [
     kind: EVENT_KINDS.SPECIAL,
     rarity: "rare",
     weight: 0.35,
-    requirements: { decisions: ["c_inf_escuela_amigo:invitar"] },
+    requirements: { requireAnyFlag: ["amigo_infancia", "recuerda_recreo"], decisions: ["c_inf_escuela_amigo:invitar"] },
     title: "Tu amigo de la infancia",
     description: "El niño al que invitaste a jugar aparece con una propuesta inesperada.",
     options: [

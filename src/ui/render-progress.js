@@ -18,6 +18,7 @@ export function renderBottomNav(tab) {
     { id: "stories", label: "Historias", icon: "📖" },
     { id: "collection", label: "Colección", icon: "🏆" },
     { id: "missions", label: "Misiones", icon: "🎯" },
+    { id: "legacy", label: "Legado", icon: "🌳" },
   ];
   return tabs
     .map(

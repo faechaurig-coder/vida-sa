@@ -1,4 +1,5 @@
-import { createGame, startMonth, resolveDecision, finishMonth, hudFromGame, eventForUI } from "../motor/loop.js";
+import { createGame, startMonth, resolveDecision, finishMonth, hudFromGame, eventForUI, startNewLife } from "../motor/loop.js";
+import { mergeGlobalLegacy } from "../motor/relationships/legacy.js";
 import { seedToGameConfig } from "../motor/adapter/legacy.js";
 import { SEEDS, getSeed } from "../content/seeds.js";
 import { emptyMeta, loadSave, saveAll } from "../systems/persist.js";
@@ -12,6 +13,7 @@ import {
   renderCollection,
   renderMissions,
 } from "./render-progress.js";
+import { renderLegacy, renderLifeEnded } from "./render-legacy.js";
 import { unlockPresentation } from "../motor/unlocks.js";
 import { characterMood, lifeIdentity, vitalsForHud, contextualizeEventForPlayer } from "./life-view.js";
 import { FX, playFx } from "./fx.js";
@@ -24,7 +26,7 @@ const bottomNav = document.getElementById("bottom-nav");
 const topbar = document.getElementById("topbar");
 const fineprint = document.getElementById("fineprint");
 
-const IN_GAME_SCREENS = new Set(["life", "stories", "collection", "missions"]);
+const IN_GAME_SCREENS = new Set(["life", "stories", "collection", "missions", "legacy"]);
 
 const state = {
   screen: "boot",
@@ -205,7 +207,7 @@ function paintHud() {
   }
   document.getElementById("hud-date").textContent = h.monthYear;
   const extra = [];
-  if (id.partner) extra.push("❤️ Relación");
+  if (id.partner) extra.push("❤️ " + (id.partner.name || "Relación"));
   if (id.fame) extra.push("⭐ Fama");
   document.getElementById("hud-extra").textContent = extra.join(" · ");
   const cash = document.getElementById("hud-money");
@@ -404,6 +406,10 @@ function render() {
       return;
     }
     if (state.screen === "life") {
+      if (state.game?.ended) {
+        stageEl.innerHTML = renderLifeEnded(state.game);
+        return;
+      }
       if (!state.view?.event) {
         state.screen = "boot";
         stageEl.innerHTML = renderBoot(state.meta, state.savePreview, state.confirmNew);
@@ -422,6 +428,11 @@ function render() {
     }
     if (state.screen === "missions") {
       stageEl.innerHTML = renderMissions(state.game);
+      return;
+    }
+    if (state.screen === "legacy") {
+      if (state.game?.ended) stageEl.innerHTML = renderLifeEnded(state.game);
+      else stageEl.innerHTML = renderLegacy(state.game);
     }
   } catch {
     state.screen = "boot";
@@ -498,6 +509,19 @@ stageEl.addEventListener("click", async (e) => {
     beginLife({ ...seedToGameConfig(seed), name: "Tú" });
     return;
   }
+  if (act === "new-life") {
+    if (!state.game?.lifeSummary) return;
+    state.meta = mergeGlobalLegacy(state.meta, state.game.lifeSummary);
+    const worldId = state.game.worldId;
+    const name = state.game.player.name;
+    const next = startNewLife(state.game, state.meta, { worldId, name });
+    state.game = startMonth(next);
+    state.view = { event: lifeEventView(state.game) };
+    state.screen = "life";
+    state.tab = "life";
+    persist();
+    return render();
+  }
   if (act === "opt") {
     if (state.game?.phase === "showing_result" && !state.game.pendingEvent) {
       return completeResultFlow();
@@ -550,9 +574,21 @@ topbar?.addEventListener("click", (e) => {
 
 function advanceAfterResult() {
   clearDecisionTimer();
-  if (!state.game || state.game.phase !== "showing_result") return;
+  if (!state.game || state.game.phase !== "showing_result") {
+    if (state.game?.ended) {
+      persist();
+      render();
+    }
+    return;
+  }
   try {
     state.game = startMonth(finishMonth(state.game));
+    if (state.game.ended) {
+      state.view = { event: null };
+      persist();
+      render();
+      return;
+    }
     state.view = { event: lifeEventView(state.game) };
     state._nextMonthLabel = null;
     playFx(FX.MONTH);

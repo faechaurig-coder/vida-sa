@@ -1,10 +1,15 @@
 import { filterEligible } from "./requirements.js";
 import { EVENT_TYPES } from "./constants.js";
 import { EVENT_KINDS } from "../content/catalog/taxonomy.js";
+import { consumeDeferredEvent, dueDeferredEvents } from "./narrative/deferred.js";
+
+export { ageDeferred } from "./narrative/deferred.js";
 
 const DEFAULT_COOLDOWN = 4;
 const STORY_COOLDOWN = 24;
 const RECENT_BLOCK = 2;
+const STORY_PRIORITY_CHANCE = 0.38;
+const SURPRISE_SLOT_CHANCE = 0.07;
 
 /** Ritmo orientativo: ~70% vida, ~20% oportunidad, ~10% especial/historia. */
 const RHYTHM = {
@@ -14,11 +19,11 @@ const RHYTHM = {
 };
 
 /**
- * Selección de evento mensual obligatorio.
- * Prioridad: forzado → diferido → pool ponderado (vida + historias + especiales).
+ * Selección de evento mensual.
+ * Capas: forzado → diferido → historia activa → sorpresa → normal.
  */
 export function pickEvent(session, catalog, rng = Math.random) {
-  const { player, forcedEventId, deferred } = session;
+  const { player, forcedEventId } = session;
 
   if (forcedEventId) {
     const ev = catalog.find((e) => e.id === forcedEventId);
@@ -27,26 +32,56 @@ export function pickEvent(session, catalog, rng = Math.random) {
     }
   }
 
-  const dueDeferred = (deferred ?? []).find((d) => d.monthsLeft <= 0 && d.type === "event");
-  if (dueDeferred) {
-    const ev = catalog.find((e) => e.id === dueDeferred.id);
+  const due = dueDeferredEvents(session);
+  if (due.length) {
+    const target = due[0];
+    const ev = catalog.find((e) => e.id === target.id);
     if (ev && isPlayable(ev, player, session, { ignoreCooldown: true, ignoreRecent: true })) {
-      return { event: ev, source: "deferred" };
+      return { event: ev, source: "deferred", consumeDeferredId: target.id };
     }
   }
 
-  let pool = buildPool(catalog, player, session);
+  const pools = partitionPools(catalog, player, session);
+
+  if (pools.story.length && rng() < STORY_PRIORITY_CHANCE) {
+    const pick = weightedPick(applyWeights(pools.story, player, session, catalog), rng);
+    if (pick) return { event: pick, source: "story" };
+  }
+
+  if (pools.surprise.length && rng() < SURPRISE_SLOT_CHANCE) {
+    const pick = weightedPick(applyWeights(pools.surprise, player, session, catalog), rng);
+    if (pick) return { event: pick, source: "surprise" };
+  }
+
+  let pool = pools.normal.length ? pools.normal : buildPool(catalog, player, session);
   const pick = weightedPick(applyWeights(pool, player, session, catalog), rng);
   return { event: pick ?? pool[0] ?? null, source: pickSource(pick, player) };
+}
+
+function partitionPools(catalog, player, session) {
+  const playable = catalog.filter((e) => isPlayable(e, player, session));
+  const story = [];
+  const surprise = [];
+  const normal = [];
+
+  for (const ev of playable) {
+    if (isSurpriseEvent(ev)) surprise.push(ev);
+    else if (isStoryContinuation(ev, player)) story.push(ev);
+    else normal.push(ev);
+  }
+
+  return { story, surprise, normal: normal.length ? normal : playable };
+}
+
+function isSurpriseEvent(ev) {
+  return ev.kind === EVENT_KINDS.SURPRISE || ev.surprise === true || ev.tags?.includes("surprise");
 }
 
 function buildPool(catalog, player, session) {
   let pool = catalog.filter((e) => isPlayable(e, player, session));
   if (pool.length >= 6) return pool;
 
-  pool = catalog.filter((e) =>
-    isPlayable(e, player, session, { ignoreCooldown: true }),
-  );
+  pool = catalog.filter((e) => isPlayable(e, player, session, { ignoreCooldown: true }));
   if (pool.length >= 4) return pool;
 
   pool = catalog.filter(
@@ -60,6 +95,7 @@ function buildPool(catalog, player, session) {
 function pickSource(ev, player) {
   if (!ev) return "life";
   if (isStoryContinuation(ev, player)) return "story";
+  if (isSurpriseEvent(ev)) return "surprise";
   if (ev.kind === EVENT_KINDS.SPECIAL || ev.rarity === "rare") return "special";
   return "life";
 }
@@ -73,7 +109,6 @@ function chapterAlreadySeen(ev, player) {
   return (player.stories?.[ev.storyId]?.discoveredChapters ?? []).includes(ev.chapterId);
 }
 
-/** Solo capítulos con requisitos cumplidos — no monopolizar el picker. */
 function isStoryContinuation(ev, player) {
   if (!isStoryEvent(ev) || !ev.storyId) return false;
   const req = ev.requirements ?? {};
@@ -81,14 +116,15 @@ function isStoryContinuation(ev, player) {
     (req.flags?.length ?? 0) > 0 ||
     (req.requireFlags?.length ?? 0) > 0 ||
     (req.requireAnyFlag?.length ?? 0) > 0 ||
-    req.careerId != null;
+    req.careerId != null ||
+    req.storyId != null;
   if (!gated) return false;
   const prog = player.stories?.[ev.storyId];
   if (!prog?.discovered && !(prog?.discoveredChapters?.length)) return false;
   return filterEligible([ev], player).length > 0;
 }
 
-function isPlayable(ev, player, session, opts = {}) {
+export function isPlayable(ev, player, session, opts = {}) {
   if (ev.exclusive && session.seenExclusive?.includes(ev.id)) return false;
   if (!opts.ignoreCooldown && isOnCooldown(session, ev.id)) return false;
   if (
@@ -107,6 +143,7 @@ function isOnCooldown(session, eventId) {
 
 function applyWeights(events, player, session, catalog) {
   const recent = new Set(session.recentEvents ?? []);
+  const recentCats = session.recentCategories ?? [];
   const heavyStreak = countRecentHeavy(session, catalog);
   const heavyPenalty = heavyStreak >= 2 ? 0.12 : heavyStreak === 1 ? 0.35 : 1;
 
@@ -116,9 +153,12 @@ function applyWeights(events, player, session, catalog) {
     w *= RHYTHM[bucket] ?? 1;
     if (bucket === "heavy") w *= heavyPenalty;
     if (isStoryContinuation(ev, player)) w *= 2.2;
-    if (ev.rarity === "rare") w *= 0.5;
+    if (ev.rarity === "rare" || ev.rarity === "legendary") w *= 0.5;
+    if (ev.rarity === "epic") w *= 0.35;
+    if (ev.priority) w *= 1 + ev.priority * 0.08;
     if (!recent.has(ev.id)) w *= 1.85;
     else w *= 0.08;
+    if (recentCats.slice(0, 2).includes(ev.category)) w *= 0.35;
     if (ev.tags?.includes(player.stage)) w *= 1.12;
     return { ev, w: Math.max(0.01, w) };
   });
@@ -126,7 +166,7 @@ function applyWeights(events, player, session, catalog) {
 
 function eventBucket(ev) {
   if (ev.kind === EVENT_KINDS.STORY || ev.storyId) return "heavy";
-  if (ev.kind === EVENT_KINDS.SPECIAL || ev.rarity === "rare") return "heavy";
+  if (ev.kind === EVENT_KINDS.SPECIAL || ev.rarity === "rare" || ev.rarity === "epic") return "heavy";
   if (ev.category === "oportunidad" || ev.kind === EVENT_KINDS.IMPORTANT) return "opportunity";
   return "life";
 }
@@ -155,12 +195,22 @@ function weightedPick(weighted, rng) {
 export function cooldownForEvent(event) {
   if (!event) return DEFAULT_COOLDOWN;
   if (event.exclusive || (event.storyId && event.chapterId)) return STORY_COOLDOWN;
-  if (event.kind === EVENT_KINDS.SPECIAL) return 12;
+  if (event.kind === EVENT_KINDS.SPECIAL || event.kind === EVENT_KINDS.SURPRISE) return 12;
+  if (event.rarity === "legendary") return 36;
   return event.cooldown ?? DEFAULT_COOLDOWN;
 }
 
-export function registerEventPlayed(session, eventId, cooldown = DEFAULT_COOLDOWN, exclusiveIds = null) {
+export function registerEventPlayed(
+  session,
+  eventId,
+  cooldown = DEFAULT_COOLDOWN,
+  exclusiveIds = null,
+  category = null,
+) {
   const recent = [eventId, ...(session.recentEvents ?? [])].slice(0, 12);
+  const recentCategories = category
+    ? [category, ...(session.recentCategories ?? [])].slice(0, 8)
+    : session.recentCategories ?? [];
   const cooldowns = { ...(session.cooldowns ?? {}) };
   cooldowns[eventId] = cooldown;
   for (const k of Object.keys(cooldowns)) {
@@ -170,12 +220,12 @@ export function registerEventPlayed(session, eventId, cooldown = DEFAULT_COOLDOW
     eventId && exclusiveIds?.includes(eventId)
       ? [...(session.seenExclusive ?? []), eventId]
       : session.seenExclusive ?? [];
-  return { ...session, recentEvents: recent, cooldowns, seenExclusive };
+  return { ...session, recentEvents: recent, recentCategories, cooldowns, seenExclusive };
 }
 
-export function ageDeferred(session) {
-  const deferred = (session.deferred ?? [])
-    .map((d) => ({ ...d, monthsLeft: d.monthsLeft - 1 }))
-    .filter((d) => d.monthsLeft > 0 || d.type === "event");
-  return { ...session, deferred };
+export function applyPickResult(session, pickResult) {
+  if (pickResult?.consumeDeferredId) {
+    return consumeDeferredEvent(session, pickResult.consumeDeferredId);
+  }
+  return session;
 }

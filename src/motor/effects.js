@@ -37,6 +37,12 @@ export function applyOptionEffects(player, raw = {}) {
   if (raw.collectibleUnlock) {
     next.collection = unlockCollectible(next.collection, raw.collectibleUnlock);
   }
+  if (raw.houseId != null) next.houseId = raw.houseId;
+  if (raw.carId != null) next.carId = raw.carId;
+  if (raw.business !== undefined) next.business = raw.business;
+  if (raw.relationships) {
+    next.relationships = { ...(next.relationships ?? {}), ...raw.relationships };
+  }
 
   return next;
 }
@@ -52,8 +58,9 @@ function unlockCollectible(collection, { kind, tier, id }) {
 }
 
 export function tickEconomy(player) {
+  const biz = player.income ? 0 : (player.business?.monthlyIncome ?? 0);
   const upkeep = (player.home ?? 0) * 5 + (player.car ?? 0) * 4;
-  const flow = (player.income ?? 0) - (player.expenses ?? 0) - upkeep;
+  const flow = (player.income ?? 0) + biz - (player.expenses ?? 0) - upkeep;
   let next = { ...player };
   next.stats = applyStatDelta(next.stats, { dinero: flow });
   if (player.debt > 0) {

@@ -26,6 +26,7 @@ export const UNIVERSIDAD_EVENTS = [
     stage: "universidad",
     category: "escuela",
     kind: EVENT_KINDS.IMPORTANT,
+    exclusive: true,
     title: "Elegir carrera",
     description: "Debes decidir qué estudiar. Tus padres tienen opiniones. Tú también.",
     options: [
@@ -44,6 +45,7 @@ export const UNIVERSIDAD_EVENTS = [
     id: "c_uni_dinero_compartir",
     stage: "universidad",
     category: "dinero",
+    exclusive: true,
     title: "Compartir departamento",
     description: "Puedes mudarte con compañeros para ahorrar o quedarte donde estás.",
     options: [
@@ -78,16 +80,31 @@ export const UNIVERSIDAD_EVENTS = [
     id: "c_uni_relacion_inicio",
     stage: "universidad",
     category: "relaciones",
+    exclusive: true,
+    cooldown: 18,
+    requirements: { hasPartner: false },
     title: "Café después de clase",
-    description: "Alguien te invita a tomar un café. Podría ser el inicio de algo.",
+    description: "Alguien te invita a un café después de clase. No sabes si es una cita, una red de contactos o ambas.",
     options: [
-      opt("si", "Ir al café", { happiness: 8, money: -15 }, {
+      opt("si", "Ir al café", { happiness: 8, money: -15, flagsAdd: ["tuvo_pareja_uni"] }, {
+        profile: "risky",
         unlock: { partner: true },
         resultText: "La conversación duró más que el café.",
         hook: "Algo cambió después de esa conversación.",
       }),
-      opt("no", "Tienes que estudiar", { influence: 3, happiness: -2 }, {
+      opt("preguntar", "Preguntar de qué se trata antes", { influence: 3, happiness: 2 }, {
+        profile: "safe",
+        resultText: "Resultó ser networking. Menos magia, más claridad.",
+      }),
+      opt("no", "Inventar que tienes que estudiar", { influence: 3, happiness: -2 }, {
+        profile: "ambiguous",
+        visibility: "hidden",
         resultText: "Te quedaste en la biblioteca. La ventana seguía abierta.",
+      }),
+      opt("llevar", "Ir, pero llevar a un amigo", { happiness: 4, influence: 4, money: -10 }, {
+        profile: "special",
+        requirements: { flags: ["amigo_infancia"] },
+        resultText: "Fue raro. También más seguro.",
       }),
     ],
   }),
@@ -95,6 +112,8 @@ export const UNIVERSIDAD_EVENTS = [
     id: "c_uni_relacion_fin",
     stage: "universidad",
     category: "relaciones",
+    exclusive: true,
+    cooldown: 16,
     requirements: { hasPartner: true },
     title: "Terminar o seguir",
     description: "Tu relación llegó a un punto difícil. Hay que decidir.",
@@ -103,6 +122,7 @@ export const UNIVERSIDAD_EVENTS = [
         resultText: "Hablaron hasta tarde. No quedó perfecto, pero siguieron.",
       }),
       opt("terminar", "Terminar la relación", { happiness: -8, influence: -2 }, {
+        relationshipEffects: { breakUp: true },
         resultText: "Fue doloroso. También honesto.",
       }),
     ],
@@ -111,6 +131,8 @@ export const UNIVERSIDAD_EVENTS = [
     id: "c_uni_fiesta",
     stage: "universidad",
     category: "amistad",
+    cooldown: 14,
+    weight: 0.65,
     title: "La fiesta universitaria",
     description: "Hay una fiesta enorme este fin de semana. Todos van.",
     options: [
@@ -144,6 +166,8 @@ export const UNIVERSIDAD_EVENTS = [
     id: "c_uni_defender",
     stage: "universidad",
     category: "personalidad",
+    cooldown: 12,
+    exclusive: true,
     title: "Defender a un compañero",
     description: "Un profesor trata injustamente a alguien del salón.",
     options: [
@@ -308,6 +332,8 @@ export const UNIVERSIDAD_EVENTS = [
     id: "c_uni_trabajo_carrera",
     stage: "universidad",
     category: "trabajo",
+    cooldown: 12,
+    weight: 0.7,
     title: "Trabajo relacionado con tu carrera",
     description: "Te ofrecen un trabajo poco pagado pero útil para tu futuro.",
     options: [

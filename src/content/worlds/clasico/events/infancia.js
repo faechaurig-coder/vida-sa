@@ -7,6 +7,8 @@ export const INFANCIA_EVENTS = [
     id: "c_inf_familia_cena",
     stage: "infancia",
     category: "familia",
+    cooldown: 8,
+    weight: 0.75,
     title: "La cena familiar",
     description: "En la mesa todos hablan a la vez. Te piden que cuentes cómo te fue en la escuela.",
     options: [
@@ -67,9 +69,11 @@ export const INFANCIA_EVENTS = [
     title: "El nuevo de la clase",
     description: "Un niño nuevo no tiene con quién jugar en el recreo.",
     options: [
-      opt("invitar", "Invitarlo a jugar", { happiness: 6, influence: 3, evil: -1 }, {
+      opt("invitar", "Invitarlo a jugar", { happiness: 6, influence: 3, evil: -1, flagsAdd: ["amigo_infancia"] }, {
+        profile: "safe",
         resultText: "Al final del recreo ya parecían amigos de años.",
         hook: "Quizá esto no sea lo último que escuches de él.",
+        deferred: { type: "flags", after: 4, add: ["recuerda_recreo"] },
       }),
       opt("ignorar", "Seguir con tus amigos", { happiness: 1, evil: 1 }, {
         resultText: "Nadie dijo nada. Pero lo viste solo en la esquina.",
@@ -83,6 +87,8 @@ export const INFANCIA_EVENTS = [
     id: "c_inf_escuela_actividad",
     stage: "infancia",
     category: "escuela",
+    cooldown: 8,
+    weight: 0.7,
     title: "La actividad del salón",
     description: "La maestra pregunta quién quiere participar en una presentación frente a todos.",
     options: [
@@ -197,8 +203,9 @@ export const INFANCIA_EVENTS = [
     title: "Te interesa la música",
     description: "En la escuela ofrecen clases extras de música. Cuesta dinero y tiempo de juego.",
     options: [
-      opt("clases", "Pedir clases", { money: -40, happiness: 6 }, {
+      opt("clases", "Pedir clases", { money: -40, happiness: 6, flagsAdd: ["clases_musica"] }, {
         hint: "Cuesta dinero, pero algo te llama.",
+        profile: "risky",
         storyProgress: { storyId: "cantante", chapterId: "interes_musica", flag: "clases_musica" },
         resultText: "La primera clase te hizo sentir algo raro en el pecho.",
         hook: "Tal vez deberías seguir haciendo esto.",
@@ -291,14 +298,18 @@ export const INFANCIA_EVENTS = [
     title: "Descubres que te gusta escribir",
     description: "Empiezas a escribir historias en un cuaderno viejo.",
     options: [
-      opt("diario", "Comenzar un diario", { happiness: 5, influence: 1 }, {
+      opt("diario", "Comenzar un diario", { happiness: 5, influence: 1, flagsAdd: ["escribe_diario"] }, {
+        profile: "safe",
         resultText: "Cada noche escribías lo que nadie más escucharía.",
         hook: "Guardaste aquel cuaderno bajo la cama.",
       }),
-      opt("historia", "Escribir una historia inventada", { happiness: 6, influence: 2 }, {
+      opt("historia", "Escribir una historia inventada", { happiness: 6, influence: 2, flagsAdd: ["escribe_historias"] }, {
+        profile: "risky",
         resultText: "Creaste un mundo con dragones y vecinos gruñones.",
       }),
-      opt("secreto", "Guardarlo como secreto", { happiness: 3, evil: 1 }, {
+      opt("secreto", "Guardarlo como secreto", { happiness: 3, evil: 1, flagsAdd: ["escribe_secreto"] }, {
+        profile: "ambiguous",
+        visibility: "hidden",
         resultText: "Nadie lo supo. Eso te hizo sentir dueño de algo.",
       }),
     ],
@@ -307,6 +318,8 @@ export const INFANCIA_EVENTS = [
     id: "c_inf_personalidad_burla",
     stage: "infancia",
     category: "personalidad",
+    cooldown: 8,
+    weight: 0.7,
     title: "Se burlan de ti",
     description: "Alguien se ríe de ti frente a otros en el recreo.",
     options: [
@@ -345,6 +358,8 @@ export const INFANCIA_EVENTS = [
     id: "c_inf_salud_fiebre",
     stage: "infancia",
     category: "salud",
+    cooldown: 10,
+    weight: 0.55,
     title: "Una semana en cama",
     description: "Te enfermas y debes quedarte en casa varios días.",
     options: [

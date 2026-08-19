@@ -29,6 +29,7 @@ export function emptyMeta() {
     lives: 0,
     pv: 0,
     lastPvGain: 0,
+    storiesDiscovered: [],
     lastEpitaph: "",
     lastIdentity: "",
     seeds: [],

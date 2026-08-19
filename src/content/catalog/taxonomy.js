@@ -69,6 +69,7 @@ export const EVENT_KINDS = {
   IMPORTANT: "important",
   STORY: "story",
   SPECIAL: "special",
+  SURPRISE: "surprise",
   WORLD: "world",
 };
 
@@ -77,6 +78,7 @@ export const EVENT_KIND_LABELS = {
   important: "Importante",
   story: "Historia",
   special: "Especial",
+  surprise: "Sorpresa",
   world: "Mundo",
 };
 

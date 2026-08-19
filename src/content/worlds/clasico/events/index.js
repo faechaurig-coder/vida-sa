@@ -4,6 +4,8 @@ import { UNIVERSIDAD_EVENTS } from "./universidad.js";
 import { ADULTEZ_EVENTS } from "./adultez.js";
 import { MADUREZ_EVENTS } from "./madurez.js";
 import { RAROS_EVENTS } from "./raros.js";
+import { V2_EVENTS } from "./v2.js";
+import { RELACIONES_EVENTS } from "./relaciones.js";
 
 export const CLASSIC_EVENTS = [
   ...INFANCIA_EVENTS,
@@ -12,4 +14,6 @@ export const CLASSIC_EVENTS = [
   ...ADULTEZ_EVENTS,
   ...MADUREZ_EVENTS,
   ...RAROS_EVENTS,
+  ...V2_EVENTS,
+  ...RELACIONES_EVENTS,
 ];

@@ -43,7 +43,7 @@ describe("fase 6 · catálogo de contenido", () => {
   it("catálogo clásico valida sin errores", () => {
     const cat = CATALOGS.clasico;
     assert.equal(validateCatalog(cat.events, { worldId: "clasico" }).length, 0);
-    assert.equal(cat.events.length, 125);
+    assert.ok(cat.events.length >= 140 && cat.events.length <= 190, "tamaño catálogo: " + cat.events.length);
   });
 
   it("catálogo capitalismo incluye 11 legacy + hint", () => {

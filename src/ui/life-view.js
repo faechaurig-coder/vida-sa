@@ -67,7 +67,7 @@ export function fameForPlayer(player) {
 
 export function partnerForPlayer(player) {
   if (!player?.partner?.active) return null;
-  return { label: "Relación", active: true };
+  return { label: "Relación", active: true, name: player.family?.partner?.name ?? null };
 }
 
 export function careerTierForPlayer(player, worldId) {

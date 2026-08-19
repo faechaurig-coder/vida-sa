@@ -3,14 +3,25 @@ import { createCalendar, computeAge, advanceMonth as nextMonth, formatMonthYear 
 import { stageForAge } from "../foundation/stages.js";
 import { partnerMonthlyEffect } from "../foundation/relationships/partner.js";
 import { applyStatDelta } from "../foundation/stats.js";
-import { pickEvent, registerEventPlayed, ageDeferred, cooldownForEvent } from "./picker.js";
-import { createPartner } from "../foundation/relationships/partner.js";
+import { pickEvent, registerEventPlayed, ageDeferred, cooldownForEvent, applyPickResult } from "./picker.js";
 import { applyOptionEffects, tickEconomy, snapPlayer, deltaFromSnap } from "./effects.js";
 import { meetsRequirements } from "./requirements.js";
 import { getCatalog, getWorldDef, getWorldMissions } from "../content/worlds/index.js";
 import { checkMissionProgress } from "./missions.js";
 import { initGameCollection, syncCollectionFromPlayer } from "./collection.js";
 import { detectUnlocks } from "./unlocks.js";
+import { scheduleDeferred } from "./narrative/deferred.js";
+import { recordDecisionEntry, appendDecisionHistory } from "./narrative/history.js";
+import { optionForUI } from "./narrative/visibility.js";
+import {
+  seedOriginFamily,
+  beginRelationship,
+  applyRelationshipEffects,
+  syncPartnerMirror,
+  addMemory,
+  shouldEndLife,
+  buildLifeSummary,
+} from "./relationships/index.js";
 
 export function createGame(config = {}) {
   const birth = createCalendar(config.birthYear ?? 2018, config.birthMonth ?? 1);
@@ -34,12 +45,19 @@ export function createGame(config = {}) {
     stories: config.stories ?? {},
     collection: config.collection ?? initGameCollection(worldDef?.collectibles),
     decisions: [],
+    decisionHistory: config.decisionHistory ?? [],
     home: config.home ?? 0,
     car: config.car ?? 0,
+    houseId: config.houseId ?? null,
+    carId: config.carId ?? null,
+    business: config.business ?? null,
+    relationships: config.relationships ?? {},
     debt: config.debt ?? 0,
     income: config.income ?? 0,
     expenses: config.expenses ?? 0,
     originId: config.originId ?? null,
+    family: config.family ?? seedOriginFamily({ birth: birth, calendar }, config.rng ?? Math.random),
+    memories: config.memories ?? [],
   };
 
   return {
@@ -50,6 +68,7 @@ export function createGame(config = {}) {
     forcedEventId: null,
     deferred: [],
     recentEvents: [],
+    recentCategories: [],
     cooldowns: {},
     seenExclusive: [],
     lastResult: null,
@@ -60,11 +79,13 @@ export function createGame(config = {}) {
       active: getWorldMissions(worldId)[0]?.id ?? null,
     },
     ended: false,
+    lifeSummary: null,
   };
 }
 
 /** START MONTH → GENERATE EVENT */
 export function startMonth(game, rng = Math.random) {
+  if (game.ended) return game;
   const catalog = getCatalog(game.worldId);
   let player = game.player;
 
@@ -73,11 +94,18 @@ export function startMonth(game, rng = Math.random) {
   player = tickEconomy(player);
   player = refreshAge(player);
 
+  if (shouldEndLife(player)) {
+    return endLife({ ...game, player });
+  }
+
   let session = { ...game, player, catalog };
   session = ageDeferred(session);
 
-  const { event, source } = pickEvent(session, catalog, rng);
+  const pickResult = pickEvent(session, catalog, rng);
+  const { event, source } = pickResult;
   if (!event) throw new Error("Sin eventos elegibles para " + game.worldId);
+
+  session = applyPickResult(session, pickResult);
 
   return {
     ...session,
@@ -107,11 +135,22 @@ export function resolveDecision(game, optionId) {
   const before = snapPlayer(game.player);
   const raw = option.effects ?? option.immediate ?? {};
   let player = applyOptionEffects(game.player, raw);
-  player.decisions = [...player.decisions, event.id + ":" + optionId];
+  let storyChanges = null;
 
   if (option.storyProgress) {
     player = applyStoryProgress(player, option.storyProgress);
+    storyChanges = option.storyProgress;
   }
+
+  const historyEntry = recordDecisionEntry({
+    event,
+    option,
+    player,
+    beforePlayer: game.player,
+    afterPlayer: player,
+    storyChanges,
+  });
+  player = appendDecisionHistory(player, historyEntry);
   player = syncCollectionFromPlayer(player);
   if (option.unlock?.fame) {
     player.fame = { line: option.unlock.fame, level: 1 };
@@ -128,19 +167,37 @@ export function resolveDecision(game, optionId) {
     if (careerTitle) player.job = careerTitle;
   }
   if (option.unlock?.partner) {
-    player.partner = createPartner(option.unlock.partnerTraits ?? option.partnerTraits ?? {});
+    player = beginRelationship(player, {
+      traits: option.unlock.partnerTraits ?? option.partnerTraits ?? {},
+    });
   }
+  if (option.relationshipEffects) {
+    player = applyRelationshipEffects(player, option.relationshipEffects);
+  }
+  if (option.memory) {
+    player = addMemory(player, option.memory);
+  }
+  if (raw.endLife || option.endLife) {
+    player = { ...player };
+  }
+  player = syncPartnerMirror(player);
 
-  const deferred = [...(game.deferred ?? [])];
+  let deferred = [...(game.deferred ?? [])];
   if (option.deferred) {
-    deferred.push({
-      type: option.deferred.type ?? "event",
-      id: option.deferred.id,
-      monthsLeft: option.deferred.after ?? option.deferred.monthsLeft ?? 3,
+    deferred = scheduleDeferred(deferred, {
+      ...option.deferred,
+      sourceEventId: event.id,
+      sourceOptionId: optionId,
     });
   }
   if (option.nextEvent) {
-    deferred.push({ type: "event", id: option.nextEvent, monthsLeft: 0 });
+    deferred = scheduleDeferred(deferred, {
+      type: "event",
+      id: option.nextEvent,
+      after: 0,
+      sourceEventId: event.id,
+      sourceOptionId: optionId,
+    });
   }
 
   const after = snapPlayer(player);
@@ -160,11 +217,13 @@ export function resolveDecision(game, optionId) {
         deltas: deltaFromSnap(before, after),
         before,
         after,
+        profile: option.profile ?? null,
       },
     },
     event.id,
     event.cooldown ?? cooldownForEvent(event),
     event.exclusive ? [event.id] : null,
+    event.category,
   );
 
   next = checkMissionProgress(next);
@@ -176,7 +235,37 @@ export function resolveDecision(game, optionId) {
       unlocks,
     },
   };
+  if (option.endLife || raw.endLife) {
+    next = endLife(next);
+  }
   return next;
+}
+
+export function endLife(game) {
+  const summary = buildLifeSummary(game.player);
+  return {
+    ...game,
+    pendingEvent: null,
+    phase: "life_ended",
+    ended: true,
+    lifeSummary: summary,
+  };
+}
+
+export function startNewLife(previousGame, meta = {}, config = {}) {
+  const worldId = config.worldId ?? previousGame?.worldId ?? "clasico";
+  const name = config.name ?? previousGame?.player?.name ?? "Tú";
+  return createGame({
+    worldId,
+    name,
+    stats: { dinero: 0 },
+    partner: null,
+    home: 0,
+    car: 0,
+    business: null,
+    flags: [],
+    stories: {},
+  });
 }
 
 /** SHOW RESULT → ADVANCE MONTH (llamar tras UI) */
@@ -244,6 +333,7 @@ export function hudFromGame(game) {
     maldad: p.stats.maldad,
     job: p.job,
     partner: p.partner?.active ?? false,
+    partnerName: p.family?.partner?.name ?? null,
     fame: p.fame,
     careerId: p.careerId,
     home: p.home,
@@ -251,7 +341,7 @@ export function hudFromGame(game) {
   };
 }
 
-export function eventForUI(event) {
+export function eventForUI(event, player = null) {
   if (!event) return null;
   return {
     id: event.id,
@@ -261,11 +351,10 @@ export function eventForUI(event) {
     category: event.category,
     kind: event.kind ?? event.eventType ?? null,
     storyId: event.storyId ?? null,
-    options: (event.options ?? []).map((o) => ({
-      id: o.id,
-      label: o.text ?? o.label,
-      hint: o.hint ?? "",
-      effects: o.effects ?? o.immediate ?? {},
-    })),
+    rarity: event.rarity ?? "normal",
+    options: (event.options ?? []).map((o) => {
+      const ok = player ? meetsRequirements(player, o.requirements) : true;
+      return optionForUI(o, player, ok);
+    }),
   };
 }

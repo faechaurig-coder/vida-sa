@@ -7,6 +7,7 @@ import {
   isValidKind,
   LIFE_STAGE_IDS,
 } from "./taxonomy.js";
+import { RARITY_LEVELS, EMOTION_PROFILES } from "../../motor/narrative/taxonomy.js";
 
 const DEFAULT_COOLDOWN = 6;
 const DEFAULT_WEIGHT = 1;
@@ -53,15 +54,21 @@ export function defineEvent(spec) {
     cooldown: spec.cooldown ?? DEFAULT_COOLDOWN,
     exclusive,
     repeatable,
+    rarity: spec.rarity ?? "normal",
+    priority: spec.priority ?? 0,
+    emotionProfile: normalizeEmotionProfile(spec.emotionProfile),
+    surprise: spec.surprise ?? spec.kind === EVENT_KINDS.SURPRISE,
     options: (spec.options ?? []).map(normalizeOption),
   };
 }
 
 function inferKind(spec) {
   if (spec.kind) return spec.kind;
+  if (spec.surprise) return EVENT_KINDS.SURPRISE;
   if (spec.eventType === EVENT_TYPES.STORY || spec.storyId) return EVENT_KINDS.STORY;
   if (spec.worldId === "capitalismo" && spec._legacy) return EVENT_KINDS.WORLD;
-  if (spec.rarity === "rare" || spec.beat) return EVENT_KINDS.IMPORTANT;
+  if (spec.rarity === "rare" || spec.rarity === "epic" || spec.rarity === "legendary" || spec.beat)
+    return EVENT_KINDS.IMPORTANT;
   return EVENT_KINDS.NORMAL;
 }
 
@@ -85,7 +92,16 @@ function normalizeOption(opt) {
     effects: opt.effects ?? opt.immediate ?? {},
     text: opt.text ?? opt.label,
     resultText: opt.resultText ?? opt.punchline,
+    profile: opt.profile ?? null,
+    visibility: opt.visibility ?? "partial",
+    revealedEffects: opt.revealedEffects ?? [],
   };
+}
+
+function normalizeEmotionProfile(raw) {
+  if (!raw) return [];
+  const list = Array.isArray(raw) ? raw : [raw];
+  return list.filter((e) => EMOTION_PROFILES.includes(e));
 }
 
 /** Normaliza un evento ya existente (legacy/adaptado) al schema canónico. */

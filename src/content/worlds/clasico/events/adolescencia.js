@@ -192,7 +192,8 @@ export const ADOLESCENCIA_EVENTS = [
     title: "El club escolar",
     description: "Puedes entrar a un club: teatro, deportes o tecnología.",
     options: [
-      opt("teatro", "Teatro", { happiness: 6, influence: 5 }, {
+      opt("teatro", "Teatro", { happiness: 6, influence: 5, flagsAdd: ["actor_teatro"] }, {
+        profile: "risky",
         resultText: "Aprendiste a proyectar la voz. Te gustó el escenario.",
         hook: "Algo en las luces te llamó.",
       }),
@@ -211,7 +212,8 @@ export const ADOLESCENCIA_EVENTS = [
     title: "El negocio con tu amigo",
     description: "Un amigo quiere vender algo en la escuela contigo. Podría funcionar o salir mal.",
     options: [
-      opt("si", "Hacerlo juntos", { money: 40, happiness: 4, influence: 3, evil: 2 }, {
+      opt("si", "Hacerlo juntos", { money: 40, happiness: 4, influence: 3, evil: 2, flagsAdd: ["espiritu_emprendedor"] }, {
+        profile: "risky",
         resultText: "Vendieron todo en una tarde. Se sintieron invencibles.",
         hook: "La primera ganancia sabe distinto.",
       }),
@@ -239,17 +241,31 @@ export const ADOLESCENCIA_EVENTS = [
     id: "c_ado_escuela_trampa",
     stage: "adolescencia",
     category: "escuela",
-    title: "La oportunidad de hacer trampa",
-    description: "Alguien te ofrece las respuestas del examen.",
+    title: "El profesor vende las respuestas",
+    description: "Tu mejor amigo te cuenta, en voz baja, que el profesor está vendiendo las respuestas del examen.",
     options: [
-      opt("trampa", "Aceptarlas", { influence: 3, evil: 6, happiness: 2 }, {
+      opt("trampa", "Comprar las respuestas", { influence: 3, evil: 6, happiness: 2, money: -25, flagsAdd: ["trampa_examen"] }, {
+        profile: "risky",
+        visibility: "partial",
+        revealedEffects: ["dinero"],
         resultText: "Aprobaste sin estudiar. El vacío fue ruidoso.",
+        deferred: { type: "flags", after: 2, add: ["rumor_trampa"] },
       }),
-      opt("estudiar", "Estudiar por tu cuenta", { happiness: -2, influence: 4, evil: -2 }, {
+      opt("estudiar", "Estudiar por tu cuenta y no decir nada", { happiness: -2, influence: 4, evil: -2 }, {
+        profile: "safe",
         resultText: "Te costó, pero lo lograste limpio.",
       }),
-      opt("avisar", "Avisar al profesor", { influence: 6, evil: -3, happiness: -3 }, {
+      opt("avisar", "Avisar al director", { influence: 6, evil: -3, happiness: -3, flagsAdd: ["delato_trampa"] }, {
+        profile: "ambiguous",
+        visibility: "hidden",
         resultText: "Hubo consecuencias. No todas cayeron sobre ti.",
+        hook: "Alguien dejó de hablarte.",
+      }),
+      opt("vender", "Comprarlas y venderlas a otros", { money: 40, evil: 10, influence: 4, flagsAdd: ["trampa_examen", "vendio_respuestas"] }, {
+        profile: "special",
+        visibility: "hidden",
+        requirements: { evilMin: 15 },
+        resultText: "Hiciste negocio. También enemigos.",
       }),
     ],
   }),
